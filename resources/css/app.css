@@ -1,11 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
 @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
-
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
-}
+:root { --ink: #18352b; --muted: #738079; --cream: #f7f4eb; --green: #285c43; --lime: #d3e773; --line: #dfe4d8; }
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: var(--cream); font-family: 'DM Sans', sans-serif; }
+.auth-page { min-height: 100vh; display: grid; grid-template-columns: minmax(360px, 43%) 1fr; }
+.brand-panel { position: relative; overflow: hidden; padding: clamp(38px, 8vw, 110px) clamp(32px, 8vw, 120px); color: #f8f7ee; background: var(--green); display: flex; flex-direction: column; justify-content: center; }
+.brand-panel::before { content: ''; position: absolute; width: 470px; height: 470px; border: 1px solid rgba(211,231,115,.25); border-radius: 50%; right: -210px; bottom: -120px; box-shadow: 0 0 0 52px rgba(211,231,115,.05), 0 0 0 105px rgba(211,231,115,.04); }
+.brand-mark { width: 48px; height: 48px; border: 1px solid var(--lime); display: grid; place-items: center; position: relative; margin-bottom: 70px; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+.brand-mark i { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--lime); right: -4px; top: -4px; }
+.eyebrow { margin: 0 0 18px; font-size: 11px; font-weight: 700; letter-spacing: .18em; }
+.brand-panel .eyebrow { color: var(--lime); }
+h1, h2 { font-family: 'Fraunces', serif; font-weight: 500; }
+h1 { margin: 0; font-size: clamp(48px, 5.5vw, 82px); line-height: .98; letter-spacing: -.04em; }
+h1 em { color: var(--lime); font-style: normal; }
+.brand-copy { max-width: 350px; margin: 28px 0 48px; color: #c5d3c8; line-height: 1.7; font-size: 15px; }
+.fresh-note { display: flex; gap: 12px; align-items: center; color: #c5d3c8; font-size: 12px; line-height: 1.45; }
+.fresh-note strong { color: #f8f7ee; font-size: 13px; font-weight: 600; }.note-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 6px rgba(211,231,115,.14); }
+.leaf { position: absolute; color: var(--lime); opacity: .55; }.leaf-one { right: 13%; top: 17%; font-size: 34px; }.leaf-two { right: 28%; bottom: 14%; font-size: 44px; }
+.form-panel { display: grid; place-items: center; padding: 50px 32px; background: #fffdf7; }.form-wrap { width: min(100%, 410px); }.mobile-brand { display: none; }
+.form-heading .eyebrow { color: #8a958d; margin-bottom: 12px; }.form-heading h2 { margin: 0; font-size: 44px; letter-spacing: -.035em; }.form-heading p:last-child { color: var(--muted); margin: 8px 0 35px; font-size: 14px; }
+.auth-tabs { display: flex; gap: 28px; border-bottom: 1px solid var(--line); margin-bottom: 27px; }.tab { border: 0; background: transparent; color: #9ca59e; cursor: pointer; padding: 0 0 13px; font: inherit; font-size: 14px; position: relative; }.tab.is-active { color: var(--green); font-weight: 700; }.tab.is-active::after { content: ''; position: absolute; height: 2px; background: var(--green); left: 0; right: 0; bottom: -1px; }
+.field { margin-bottom: 20px; }.field label, .field-label { font-size: 12px; font-weight: 700; }.field-label { display: flex; justify-content: space-between; }.field-label a { color: var(--green); text-decoration: none; font-weight: 500; }.field input { width: 100%; border: 1px solid var(--line); background: #fffdf7; border-radius: 2px; margin-top: 8px; padding: 14px 15px; outline: none; color: var(--ink); font: inherit; font-size: 14px; }.field input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(40,92,67,.1); }.field input::placeholder { color: #aeb7af; }
+.check-row { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; margin: 2px 0 23px; }.check-row input { accent-color: var(--green); }.submit-button { width: 100%; border: 0; border-radius: 2px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 15px 17px; background: var(--green); color: white; font: inherit; font-size: 13px; font-weight: 700; }.submit-button:hover { background: #1c4933; }.divider { display: flex; align-items: center; gap: 12px; color: #9ca59e; font-size: 11px; margin: 28px 0 18px; }.divider::before, .divider::after { content: ''; height: 1px; background: var(--line); flex: 1; }.socials { display: flex; justify-content: center; gap: 10px; }.socials button { width: 38px; height: 38px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; font: 600 16px Georgia; }.terms { color: #9ca59e; text-align: center; font-size: 10px; line-height: 1.6; margin: 27px auto 0; max-width: 290px; }.terms a { color: var(--green); }
+@media (max-width: 760px) { .auth-page { display: block; }.brand-panel { min-height: 270px; padding: 30px 28px; justify-content: flex-start; }.brand-panel .brand-mark { display: none; }.brand-panel h1 { font-size: 47px; }.brand-copy { margin: 18px 0 0; font-size: 13px; max-width: 390px; }.fresh-note, .leaf { display: none; }.form-panel { padding: 38px 28px 45px; }.mobile-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 45px; font-family: 'Fraunces', serif; font-size: 20px; }.mobile-brand .brand-mark { margin: 0; width: 38px; height: 38px; color: var(--green); border-color: var(--green); }.mobile-brand .brand-mark i { background: var(--green); } }
