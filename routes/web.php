@@ -139,12 +139,14 @@ Route::middleware('auth')->group(function (): void {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth')
+Route::middleware(['auth', 'seller'])
     ->prefix('seller')
     ->name('seller.')
     ->group(function (): void {
-        Route::get('/dashboard', [DashboardController::class, 'index'])
-            ->name('dashboard');
+        Route::get(
+            '/dashboard',
+            [DashboardController::class, 'index']
+        )->name('dashboard');
 
         Route::resource(
             'products',
