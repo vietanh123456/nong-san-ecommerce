@@ -46,11 +46,6 @@
             white-space: nowrap;
         }
 
-        .badge-pending {
-            color: #92400e;
-            background: #fef3c7;
-        }
-
         .review-date {
             color: #6b7280;
             white-space: nowrap;
@@ -212,12 +207,11 @@
             <div class="review-summary">
                 <div>
                     <h2>Đánh giá và bình luận</h2>
-                    <p>Duyệt hoặc từ chối đánh giá của khách hàng.</p>
+                    <p>Các đánh giá công khai của khách hàng.</p>
                 </div>
 
-                <span class="badge badge-pending">
-                    {{ $product->reviews->where('status', 'pending')->count() }}
-                    đánh giá chờ duyệt
+                <span class="badge badge-active">
+                    {{ $product->reviews->count() }} đánh giá
                 </span>
             </div>
 
@@ -229,8 +223,6 @@
                             <th>Số sao</th>
                             <th>Bình luận</th>
                             <th>Ngày gửi</th>
-                            <th>Trạng thái</th>
-                            <th>Thao tác</th>
                         </tr>
                     </thead>
 
@@ -260,78 +252,10 @@
                                 <td class="review-date">
                                     {{ $review->created_at->format('d/m/Y H:i') }}
                                 </td>
-
-                                <td>
-                                    @if ($review->status === 'approved')
-                                        <span class="badge badge-active">
-                                            Đã duyệt
-                                        </span>
-                                    @elseif ($review->status === 'rejected')
-                                        <span class="badge badge-inactive">
-                                            Đã từ chối
-                                        </span>
-                                    @else
-                                        <span class="badge badge-pending">
-                                            Chờ duyệt
-                                        </span>
-                                    @endif
-                                </td>
-
-                                <td>
-                                    <div class="actions">
-                                        @if ($review->status !== 'approved')
-                                            <form
-                                                action="{{ route('seller.reviews.moderate', $review) }}"
-                                                method="POST"
-                                            >
-                                                @csrf
-                                                @method('PATCH')
-
-                                                <input
-                                                    type="hidden"
-                                                    name="status"
-                                                    value="approved"
-                                                >
-
-                                                <button
-                                                    type="submit"
-                                                    class="btn"
-                                                    onclick="return confirm('Bạn có muốn duyệt đánh giá này không?')"
-                                                >
-                                                    Duyệt
-                                                </button>
-                                            </form>
-                                        @endif
-
-                                        @if ($review->status !== 'rejected')
-                                            <form
-                                                action="{{ route('seller.reviews.moderate', $review) }}"
-                                                method="POST"
-                                            >
-                                                @csrf
-                                                @method('PATCH')
-
-                                                <input
-                                                    type="hidden"
-                                                    name="status"
-                                                    value="rejected"
-                                                >
-
-                                                <button
-                                                    type="submit"
-                                                    class="btn btn-danger"
-                                                    onclick="return confirm('Bạn có muốn từ chối đánh giá này không?')"
-                                                >
-                                                    Từ chối
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6">
+                                <td colspan="4">
                                     Sản phẩm chưa có đánh giá.
                                 </td>
                             </tr>

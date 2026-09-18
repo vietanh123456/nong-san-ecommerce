@@ -38,7 +38,9 @@
                 <div class="flex items-center gap-2 mb-3">
                     <div class="text-amber-400 text-lg">
                         @for ($star = 1; $star <= 5; $star++)
-                            <span>{{ $star <= round($averageRating ?? 0) ? '★' : '☆' }}</span>
+                            <span>
+                                {{ $star <= round($averageRating ?? 0) ? '★' : '☆' }}
+                            </span>
                         @endfor
                     </div>
 
@@ -167,18 +169,23 @@
                             required
                         >
                             <option value="">Chọn mức đánh giá</option>
+
                             <option value="5" @selected(old('rating') == 5)>
                                 5 sao - Rất tốt
                             </option>
+
                             <option value="4" @selected(old('rating') == 4)>
                                 4 sao - Tốt
                             </option>
+
                             <option value="3" @selected(old('rating') == 3)>
                                 3 sao - Bình thường
                             </option>
+
                             <option value="2" @selected(old('rating') == 2)>
                                 2 sao - Chưa tốt
                             </option>
+
                             <option value="1" @selected(old('rating') == 1)>
                                 1 sao - Không hài lòng
                             </option>
@@ -223,7 +230,7 @@
                     </button>
 
                     <p class="text-xs text-gray-500">
-                        Đánh giá sẽ được hiển thị sau khi người bán duyệt.
+                        Đánh giá của bạn sẽ được đăng công khai ngay sau khi gửi.
                     </p>
                 </form>
             @else
@@ -234,18 +241,20 @@
         @else
             <div class="bg-gray-50 rounded-xl px-4 py-4 text-sm text-gray-600">
                 Bạn cần
+
                 <a
                     href="{{ route('login') }}"
                     class="font-bold text-emerald-600 hover:text-emerald-700"
                 >
                     đăng nhập
                 </a>
+
                 để gửi đánh giá.
             </div>
         @endauth
     </div>
 
-    {{-- Danh sách đánh giá đã duyệt --}}
+    {{-- Danh sách đánh giá công khai --}}
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8 mt-8">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h2 class="text-xl font-bold text-gray-800">
@@ -253,7 +262,7 @@
             </h2>
 
             <span class="text-sm text-gray-500">
-                {{ $reviewCount ?? 0 }} đánh giá đã được duyệt
+                {{ $reviewCount ?? 0 }} đánh giá
             </span>
         </div>
 
@@ -269,7 +278,9 @@
 
                                 <div class="text-amber-400 mt-1">
                                     @for ($star = 1; $star <= 5; $star++)
-                                        <span>{{ $star <= $review->rating ? '★' : '☆' }}</span>
+                                        <span>
+                                            {{ $star <= $review->rating ? '★' : '☆' }}
+                                        </span>
                                     @endfor
                                 </div>
                             </div>
@@ -292,7 +303,7 @@
                 <div class="text-4xl mb-3">⭐</div>
 
                 <p class="font-semibold text-gray-700">
-                    Sản phẩm chưa có đánh giá được duyệt.
+                    Sản phẩm chưa có đánh giá.
                 </p>
 
                 <p class="text-sm text-gray-500 mt-1">
