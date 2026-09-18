@@ -2,44 +2,49 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Product;
 use App\Models\Wishlist;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class WishlistController extends Controller
 {
-    // Hiển thị danh sách yêu thích của User đang đăng nhập
-    public function index()
+    public function index(): View
     {
-        if (!Auth::check()) {
-            return redirect()->route('login')->with('warning', 'Vui lòng đăng nhập để xem danh sách yêu thích!');
-        }
+        $wishlists = Wishlist::query()
+            ->with('product')
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->get();
 
-        // Lấy danh sách kèm thông tin sản phẩm
-        $wishlists = Wishlist::with('product')->where('user_id', Auth::id())->latest()->get();
         return view('wishlist', compact('wishlists'));
     }
 
-    // Thêm hoặc Xóa sản phẩm khỏi Yêu thích (Toggle)
-    public function toggle($productId)
+    public function toggle(Product $product): RedirectResponse
     {
-        if (!Auth::check()) {
-            return redirect()->route('login')->with('warning', 'Vui lòng đăng nhập để lưu sản phẩm yêu thích!');
-        }
+        $wishlist = Wishlist::query()
+            ->where('user_id', Auth::id())
+            ->where('product_id', $product->id)
+            ->first();
 
-        $wishlist = Wishlist::where('user_id', Auth::id())
-                            ->where('product_id', $productId)
-                            ->first();
-
-        if ($wishlist) {
+        if ($wishlist !== null) {
             $wishlist->delete();
-            return back()->with('success', 'Đã xóa khỏi danh sách yêu thích!');
-        } else {
-            Wishlist::create([
-                'user_id' => Auth::id(),
-                'product_id' => $productId,
-            ]);
-            return back()->with('success', 'Đã thêm vào danh sách yêu thích!');
+
+            return back()->with(
+                'success',
+                'Đã xóa khỏi danh sách yêu thích!'
+            );
         }
+
+        Wishlist::create([
+            'user_id' => Auth::id(),
+            'product_id' => $product->id,
+        ]);
+
+        return back()->with(
+            'success',
+            'Đã thêm vào danh sách yêu thích!'
+        );
     }
 }
