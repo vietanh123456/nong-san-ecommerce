@@ -140,9 +140,4 @@ Route::middleware('auth')
             'products',
             SellerProductController::class
         );
-
-        Route::patch(
-            '/reviews/{review}/moderate',
-            [ReviewController::class, 'moderate']
-        )->name('reviews.moderate');
     });
