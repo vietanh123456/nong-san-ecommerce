@@ -40,6 +40,14 @@ Route::get('/', function (Request $request) {
 
 /*
 |--------------------------------------------------------------------------
+| Chuyển đường dẫn /home về trang chủ
+|--------------------------------------------------------------------------
+*/
+
+Route::redirect('/home', '/');
+
+/*
+|--------------------------------------------------------------------------
 | Sản phẩm dành cho khách hàng
 |--------------------------------------------------------------------------
 */
@@ -101,8 +109,10 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/profile', [ProfileController::class, 'index'])
         ->name('profile');
 
-    Route::post('/address/add', [ProfileController::class, 'storeAddress'])
-        ->name('address.store');
+    Route::post(
+        '/address/add',
+        [ProfileController::class, 'storeAddress']
+    )->name('address.store');
 
     Route::delete(
         '/address/delete/{address}',
