@@ -2,48 +2,123 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Product;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class CartController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $cart = session()->get('cart', []);
+
         return view('cart', compact('cart'));
     }
 
-    public function add(Request $request, $id)
-    {
-        $product = Product::findOrFail($id);
-        $quantity = (int) $request->input('quantity', 1);
+    public function add(
+        Request $request,
+        Product $product
+    ): RedirectResponse {
+        $validated = $request->validate([
+            'quantity' => [
+                'nullable',
+                'integer',
+                'min:1',
+            ],
+        ]);
+
+        $quantity = (int) ($validated['quantity'] ?? 1);
+
+        if ($quantity > $product->stock) {
+            return back()->withErrors([
+                'quantity' => 'Số lượng vượt quá tồn kho.',
+            ]);
+        }
 
         $cart = session()->get('cart', []);
+        $productId = $product->id;
 
-        if (isset($cart[$id])) {
-            $cart[$id]['quantity'] += $quantity;
+        $currentQuantity = $cart[$productId]['quantity'] ?? 0;
+        $newQuantity = $currentQuantity + $quantity;
+
+        if ($newQuantity > $product->stock) {
+            return back()->withErrors([
+                'quantity' => 'Tổng số lượng vượt quá tồn kho.',
+            ]);
+        }
+
+        $cart[$productId] = [
+            'id' => $productId,
+            'name' => $product->name,
+            'quantity' => $newQuantity,
+            'price' => $product->price,
+            'image' => $product->image ?? '',
+        ];
+
+        session()->put('cart', $cart);
+
+        return back()->with(
+            'success',
+            'Đã thêm sản phẩm vào giỏ hàng!'
+        );
+    }
+
+    public function update(
+        Request $request,
+        Product $product
+    ): RedirectResponse {
+        $validated = $request->validate([
+            'action' => [
+                'required',
+                'in:increase,decrease',
+            ],
+        ]);
+
+        $cart = session()->get('cart', []);
+        $productId = $product->id;
+
+        if (!isset($cart[$productId])) {
+            return back()->withErrors([
+                'cart' => 'Sản phẩm không tồn tại trong giỏ hàng.',
+            ]);
+        }
+
+        if ($validated['action'] === 'increase') {
+            if ($cart[$productId]['quantity'] >= $product->stock) {
+                return back()->withErrors([
+                    'quantity' => 'Số lượng đã đạt mức tồn kho.',
+                ]);
+            }
+
+            $cart[$productId]['quantity']++;
         } else {
-            $cart[$id] = [
-                "id" => $product->id,
-                "name" => $product->name,
-                "quantity" => $quantity,
-                "price" => $product->price,
-                "image" => $product->image ?? $product->image_url ?? ''
-            ];
+            $cart[$productId]['quantity']--;
+
+            if ($cart[$productId]['quantity'] <= 0) {
+                unset($cart[$productId]);
+            }
         }
 
         session()->put('cart', $cart);
 
-        return redirect()->back()->with('success', 'Đã thêm sản phẩm vào giỏ hàng!');
+        return back()->with(
+            'success',
+            'Đã cập nhật giỏ hàng!'
+        );
     }
 
-    public function update(Request $request, $id)
+    public function remove(Product $product): RedirectResponse
     {
         $cart = session()->get('cart', []);
-        if (isset($cart[$id]) && $request->quantity) {
-            $cart[$id]['quantity'] = (int) $request->quantity;
-            session()->put('cart', $cart);
-        }
-        return redirect()->back()->with('success', 'Cập nhật giỏ hàng thành công!');
+
+        unset($cart[$product->id]);
+
+        session()->put('cart', $cart);
+
+        return back()->with(
+            'success',
+            'Đã xóa sản phẩm khỏi giỏ hàng!'
+        );
     }
 }
