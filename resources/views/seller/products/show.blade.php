@@ -32,9 +32,38 @@
             margin-top: 30px;
         }
 
+        .review-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .review-stars {
+            color: #d97706;
+            font-size: 18px;
+            white-space: nowrap;
+        }
+
+        .badge-pending {
+            color: #92400e;
+            background: #fef3c7;
+        }
+
+        .review-date {
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
         @media (max-width: 768px) {
             .product-detail {
                 grid-template-columns: 1fr;
+            }
+
+            .review-summary {
+                align-items: flex-start;
+                flex-direction: column;
             }
         }
     </style>
@@ -180,7 +209,17 @@
         </section>
 
         <section class="section">
-            <h2>Đánh giá và bình luận</h2>
+            <div class="review-summary">
+                <div>
+                    <h2>Đánh giá và bình luận</h2>
+                    <p>Duyệt hoặc từ chối đánh giá của khách hàng.</p>
+                </div>
+
+                <span class="badge badge-pending">
+                    {{ $product->reviews->where('status', 'pending')->count() }}
+                    đánh giá chờ duyệt
+                </span>
+            </div>
 
             <div class="table-wrapper">
                 <table>
@@ -189,21 +228,110 @@
                             <th>Khách hàng</th>
                             <th>Số sao</th>
                             <th>Bình luận</th>
+                            <th>Ngày gửi</th>
                             <th>Trạng thái</th>
+                            <th>Thao tác</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         @forelse ($product->reviews as $review)
                             <tr>
-                                <td>{{ $review->user->name ?? 'Người dùng' }}</td>
-                                <td>{{ $review->rating }}/5</td>
-                                <td>{{ $review->comment ?: 'Không có' }}</td>
-                                <td>{{ $review->status }}</td>
+                                <td>
+                                    <strong>
+                                        {{ $review->user->name ?? 'Người dùng' }}
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <div class="review-stars">
+                                        @for ($star = 1; $star <= 5; $star++)
+                                            {{ $star <= $review->rating ? '★' : '☆' }}
+                                        @endfor
+                                    </div>
+
+                                    <small>{{ $review->rating }}/5</small>
+                                </td>
+
+                                <td>
+                                    {{ $review->comment ?: 'Không có bình luận' }}
+                                </td>
+
+                                <td class="review-date">
+                                    {{ $review->created_at->format('d/m/Y H:i') }}
+                                </td>
+
+                                <td>
+                                    @if ($review->status === 'approved')
+                                        <span class="badge badge-active">
+                                            Đã duyệt
+                                        </span>
+                                    @elseif ($review->status === 'rejected')
+                                        <span class="badge badge-inactive">
+                                            Đã từ chối
+                                        </span>
+                                    @else
+                                        <span class="badge badge-pending">
+                                            Chờ duyệt
+                                        </span>
+                                    @endif
+                                </td>
+
+                                <td>
+                                    <div class="actions">
+                                        @if ($review->status !== 'approved')
+                                            <form
+                                                action="{{ route('seller.reviews.moderate', $review) }}"
+                                                method="POST"
+                                            >
+                                                @csrf
+                                                @method('PATCH')
+
+                                                <input
+                                                    type="hidden"
+                                                    name="status"
+                                                    value="approved"
+                                                >
+
+                                                <button
+                                                    type="submit"
+                                                    class="btn"
+                                                    onclick="return confirm('Bạn có muốn duyệt đánh giá này không?')"
+                                                >
+                                                    Duyệt
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        @if ($review->status !== 'rejected')
+                                            <form
+                                                action="{{ route('seller.reviews.moderate', $review) }}"
+                                                method="POST"
+                                            >
+                                                @csrf
+                                                @method('PATCH')
+
+                                                <input
+                                                    type="hidden"
+                                                    name="status"
+                                                    value="rejected"
+                                                >
+
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-danger"
+                                                    onclick="return confirm('Bạn có muốn từ chối đánh giá này không?')"
+                                                >
+                                                    Từ chối
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4">
+                                <td colspan="6">
                                     Sản phẩm chưa có đánh giá.
                                 </td>
                             </tr>

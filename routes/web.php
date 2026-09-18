@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ProductController as CustomerProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
 use App\Http\Controllers\WishlistController;
@@ -115,6 +116,11 @@ Route::middleware('auth')->group(function (): void {
         '/wishlist/toggle/{product}',
         [WishlistController::class, 'toggle']
     )->name('wishlist.toggle');
+
+    Route::post(
+        '/products/{product}/reviews',
+        [ReviewController::class, 'store']
+    )->name('reviews.store');
 });
 
 /*
@@ -130,5 +136,13 @@ Route::middleware('auth')
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
 
-        Route::resource('products', SellerProductController::class);
+        Route::resource(
+            'products',
+            SellerProductController::class
+        );
+
+        Route::patch(
+            '/reviews/{review}/moderate',
+            [ReviewController::class, 'moderate']
+        )->name('reviews.moderate');
     });
