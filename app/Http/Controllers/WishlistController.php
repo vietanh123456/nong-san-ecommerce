@@ -8,29 +8,35 @@ use Illuminate\Support\Facades\Auth;
 
 class WishlistController extends Controller
 {
-    // 1. Xem danh sách yêu thích
+    // Hiển thị danh sách yêu thích của User đang đăng nhập
     public function index()
     {
-        $wishlists = Wishlist::where('user_id', Auth::id())->with('product')->get();
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('warning', 'Vui lòng đăng nhập để xem danh sách yêu thích!');
+        }
+
+        // Lấy danh sách kèm thông tin sản phẩm
+        $wishlists = Wishlist::with('product')->where('user_id', Auth::id())->latest()->get();
         return view('wishlist', compact('wishlists'));
     }
 
-    // 2. Thêm hoặc Bỏ yêu thích
+    // Thêm hoặc Xóa sản phẩm khỏi Yêu thích (Toggle)
     public function toggle($productId)
     {
         if (!Auth::check()) {
-            return redirect()->route('login')->with('error', 'Bạn cần đăng nhập để yêu thích sản phẩm!');
+            return redirect()->route('login')->with('warning', 'Vui lòng đăng nhập để lưu sản phẩm yêu thích!');
         }
 
-        $userId = Auth::id();
-        $wishlist = Wishlist::where('user_id', $userId)->where('product_id', $productId)->first();
+        $wishlist = Wishlist::where('user_id', Auth::id())
+                            ->where('product_id', $productId)
+                            ->first();
 
         if ($wishlist) {
             $wishlist->delete();
             return back()->with('success', 'Đã xóa khỏi danh sách yêu thích!');
         } else {
             Wishlist::create([
-                'user_id' => $userId,
+                'user_id' => Auth::id(),
                 'product_id' => $productId,
             ]);
             return back()->with('success', 'Đã thêm vào danh sách yêu thích!');

@@ -3,26 +3,48 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Address;
+use App\Models\User;
 
 class AuthController extends Controller
 {
-    public function showLogin() {
+    // Hiển thị form Đăng nhập
+    public function showLogin()
+    {
         return view('login');
     }
 
-    public function showRegister() {
-        return view('register');
+    // Xử lý Đăng nhập
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
+
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
+            return redirect()->intended('/')->with('success', 'Đăng nhập thành công!');
+        }
+
+        return back()->withErrors([
+            'email' => 'Thông tin đăng nhập không chính xác.',
+        ])->onlyInput('email');
     }
 
-    public function register(Request $request) {
+// Hiển thị form Đăng ký
+public function showRegister()
+{
+    return view('register'); // Bỏ tiền tố "auth." đi
+}
+    // Xử lý Đăng ký
+    public function register(Request $request)
+    {
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
         $user = User::create([
@@ -33,48 +55,43 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        return redirect('/home');
+        return redirect()->route('login')->with('success', 'Đăng ký tài khoản thành công! Vui lòng đăng nhập.');
     }
 
-    public function login(Request $request) {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        if (Auth::attempt($credentials, $request->remember)) {
-            $request->session()->regenerate();
-            return redirect('/home');
-        }
-
-        return back()->withErrors([
-            'email' => 'Thông tin đăng nhập không chính xác.',
-        ]);
+    // Hiển thị Trang cá nhân (Profile)
+    public function profile()
+    {
+        $user = Auth::user();
+        return view('profile', compact('user'));
     }
 
-    public function logout(Request $request) {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect('/login');
-    }
+    // Cập nhật Hồ sơ cá nhân
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
 
-   // Hiển thị trang Hồ sơ cá nhân
-    public function profile() {
-        $addresses = Address::where('user_id', auth()->id())->latest()->get();
-        return view('profile', compact('addresses'));
-    }
-    
-    // Xử lý cập nhật Tên người dùng
-    public function updateProfile(Request $request) {
         $request->validate([
             'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
         ]);
 
-        $user = Auth::user();
-        $user->name = $request->name;
-        $user->save();
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
 
-        return redirect()->back()->with('success', 'Thông tin tài khoản đã được cập nhật.');
+        return back()->with('success', 'Cập nhật thông tin thành công!');
+    }
+
+    // Xử lý Đăng xuất (Triệt hạ lỗi 419)
+    public function logout(Request $request)
+    {
+        Auth::logout();
+
+        // Xóa sạch session và tái tạo lại Token CSRF mới
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/login')->with('success', 'Đã đăng xuất thành công!');
     }
 }

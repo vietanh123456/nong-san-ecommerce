@@ -43,22 +43,30 @@
 
             <!-- Tab chuyển đổi -->
             <div class="flex border-b border-gray-100 mb-6">
-                <a href="/login" class="pb-3 text-gray-400 hover:text-gray-600 text-xs font-medium tracking-wide mr-6">Đăng nhập</a>
-                <a href="/register" class="pb-3 border-b-2 border-[#0e5c36] text-[#0e5c36] font-bold text-xs tracking-wide">Đăng ký</a>
+                <a href="{{ route('login') }}" class="pb-3 text-gray-400 hover:text-gray-600 text-xs font-medium tracking-wide mr-6">Đăng nhập</a>
+                <a href="{{ route('register') }}" class="pb-3 border-b-2 border-[#0e5c36] text-[#0e5c36] font-bold text-xs tracking-wide">Đăng ký</a>
             </div>
 
-            <form action="/register" method="POST" class="space-y-4">
-    @csrf
-    
+            <!-- Hiển thị lỗi Validation nếu có -->
+            @if ($errors->any())
+                <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs space-y-1">
+                    @foreach ($errors->all() as $error)
+                        <p>• {{ $error }}</p>
+                    @endforeach
+                </div>
+            @endif
+
+            <form action="{{ route('register') }}" method="POST" class="space-y-4">
+                @csrf
 
                 <div>
                     <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">HỌ VÀ TÊN</label>
-                    <input type="text" name="name" required placeholder="Nguyễn Văn A" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0e5c36] placeholder:text-gray-300">
+                    <input type="text" name="name" value="{{ old('name') }}" required placeholder="Nguyễn Văn A" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0e5c36] placeholder:text-gray-300">
                 </div>
 
                 <div>
                     <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">EMAIL</label>
-                    <input type="email" name="email" required placeholder="ban@example.com" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0e5c36] placeholder:text-gray-300">
+                    <input type="email" name="email" value="{{ old('email') }}" required placeholder="ban@example.com" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0e5c36] placeholder:text-gray-300">
                 </div>
 
                 <div>

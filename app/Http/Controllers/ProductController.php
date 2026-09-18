@@ -12,25 +12,21 @@ class ProductController extends Controller
     {
         $query = Product::query();
 
-        // 12. Search theo tên sản phẩm
+        // Tìm kiếm không phân biệt chữ hoa, chữ thường & dấu tiếng Việt
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', '%' . $search . '%')
+                  ->orWhere('description', 'LIKE', '%' . $search . '%');
+            });
         }
 
-        // 10 & 13. Filter theo Danh mục
+        // Lọc theo danh mục
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        // 13. Filter theo Khoảng giá
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
-        }
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
-        // Sắp xếp giá
+        // Sắp xếp
         if ($request->sort == 'price_asc') {
             $query->orderBy('price', 'asc');
         } elseif ($request->sort == 'price_desc') {
@@ -43,5 +39,11 @@ class ProductController extends Controller
         $categories = Category::all();
 
         return view('products.index', compact('products', 'categories'));
+    }
+
+    public function show($id)
+    {
+        $product = Product::findOrFail($id);
+        return view('products.show', compact('product'));
     }
 }

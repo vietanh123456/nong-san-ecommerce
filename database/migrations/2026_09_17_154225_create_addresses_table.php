@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('recipient_name');
             $table->string('phone');
-            $table->string('address_detail');
+            $table->text('address_detail');
             $table->boolean('is_default')->default(false);
             $table->timestamps();
         });

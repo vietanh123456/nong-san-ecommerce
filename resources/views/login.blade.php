@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - Sàn Nông Sản</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -46,8 +47,8 @@
 
                 <!-- Tab chuyển đổi -->
                 <div class="flex border-b border-gray-200 mb-6 text-sm font-semibold">
-                    <a href="/login" class="pb-3 border-b-2 border-[#0e5c36] text-[#0e5c36] mr-6">Đăng nhập</a>
-                    <a href="/register" class="pb-3 text-gray-400 hover:text-gray-600">Đăng ký</a>
+                    <a href="{{ route('login') }}" class="pb-3 border-b-2 border-[#0e5c36] text-[#0e5c36] mr-6">Đăng nhập</a>
+                    <a href="{{ route('register') }}" class="pb-3 text-gray-400 hover:text-gray-600">Đăng ký</a>
                 </div>
 
                 <!-- Hiển thị lỗi nếu có -->
@@ -57,8 +58,8 @@
                     </div>
                 @endif
 
-                <!-- FORM ĐĂNG NHẬP KHỎI LỖI -->
-                <form action="/login" method="POST" class="space-y-5">
+                <!-- FORM ĐĂNG NHẬP (ĐÃ CẬP NHẬT ROUTE CHUẨN) -->
+                <form action="{{ route('login') }}" method="POST" class="space-y-5">
                     @csrf
 
                     <div>
@@ -91,7 +92,7 @@
 
             <!-- Footer nhỏ -->
             <div class="mt-8 text-center text-xs text-gray-400">
-                Chưa có tài khoản? <a href="/register" class="text-[#0e5c36] font-bold hover:underline">Tạo tài khoản ngay</a>
+                Chưa có tài khoản? <a href="{{ route('register') }}" class="text-[#0e5c36] font-bold hover:underline">Tạo tài khoản ngay</a>
             </div>
         </div>
 

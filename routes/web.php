@@ -1,59 +1,162 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
-use App\Models\Address;
 use App\Models\Product;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ProductController;
 use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\AuthController;
+
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| TRANG CHỦ & TÌM KIẾM
 |--------------------------------------------------------------------------
 */
+Route::get('/', function (Request $request) {
+    $query = Product::query();
 
-// Trang chủ (Lấy danh sách sản phẩm từ DB ra)
-Route::get('/', function () {
-    $products = Product::all();
+    if ($request->filled('search')) {
+        $search = trim($request->search);
+        $query->where('name', 'LIKE', '%' . $search . '%')
+              ->orWhere('description', 'LIKE', '%' . $search . '%');
+    }
+
+    $products = $query->latest()->get();
     return view('home', compact('products'));
 })->name('home');
 
-// Route Đăng nhập / Đăng ký / Đăng xuất
+/*
+|--------------------------------------------------------------------------
+| CHI TIẾT SẢN PHẨM
+|--------------------------------------------------------------------------
+*/
+Route::get('/products/{id}', function ($id) {
+    $product = Product::findOrFail($id);
+    return view('products.show', compact('product'));
+})->name('products.show');
+
+/*
+|--------------------------------------------------------------------------
+| ĐĂNG NHẬP / ĐĂNG KÝ / ĐĂNG XUẤT (BỔ SUNG ĐỂ HẾT LỖI)
+|--------------------------------------------------------------------------
+*/
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Xử lý Yêu thích (Đưa ra ngoài nhóm auth để Controller tự xử lý kiểm tra đăng nhập)
-Route::post('/wishlist/toggle/{id}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+/*
+|--------------------------------------------------------------------------
+| GIỎ HÀNG (CART)
+|--------------------------------------------------------------------------
+*/
+Route::get('/cart', function () {
+    $cart = session()->get('cart', []);
+    return view('cart', compact('cart'));
+})->name('cart.index');
 
-// Route Hồ sơ cá nhân & Địa chỉ (Yêu cầu đăng nhập)
-Route::middleware(['auth'])->group(function () {
-    Route::get('/profile', [AuthController::class, 'profile'])->name('profile');
-    Route::post('/profile', [AuthController::class, 'updateProfile'])->name('profile.update');
-    Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
-    
-    // Thêm & Xóa địa chỉ
-    Route::post('/address/add', function (Request $request) {
-        Address::create([
-            'user_id' => Auth::id(),
-            'recipient_name' => $request->recipient_name,
-            'phone' => $request->phone,
-            'address_detail' => $request->address_detail,
-            'is_default' => $request->has('is_default') ? true : false,
-        ]);
-        return back()->with('success', 'Thêm địa chỉ thành công!');
-    });
+Route::post('/cart/add/{id}', function (Request $request, $id) {
+    $product = Product::findOrFail($id);
+    $cart = session()->get('cart', []);
+    $quantity = $request->input('quantity', 1);
 
-    Route::delete('/address/delete/{id}', function ($id) {
-        Address::where('id', $id)->where('user_id', Auth::id())->delete();
-        return back()->with('success', 'Xóa địa chỉ thành công!');
-    });
-});
+    if (isset($cart[$id])) {
+        $cart[$id]['quantity'] += $quantity;
+    } else {
+        $cart[$id] = [
+            "name" => $product->name,
+            "quantity" => $quantity,
+            "price" => $product->price,
+            "image" => $product->image ?? ''
+        ];
+    }
 
-// Route Danh sách sản phẩm
-Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    session()->put('cart', $cart);
+    return redirect()->back()->with('success', 'Đã thêm vào giỏ hàng!');
+})->name('cart.add');
+
+Route::patch('/cart/update/{id}', function (Request $request, $id) {
+    $cart = session()->get('cart', []);
+
+    if (isset($cart[$id])) {
+        if ($request->action === 'increase') {
+            $cart[$id]['quantity']++;
+        } elseif ($request->action === 'decrease') {
+            $cart[$id]['quantity']--;
+            if ($cart[$id]['quantity'] <= 0) {
+                unset($cart[$id]);
+            }
+        }
+        session()->put('cart', $cart);
+    }
+
+    return redirect()->back()->with('success', 'Đã cập nhật giỏ hàng!');
+})->name('cart.update');
+
+Route::delete('/cart/remove/{id}', function ($id) {
+    $cart = session()->get('cart', []);
+    if (isset($cart[$id])) {
+        unset($cart[$id]);
+        session()->put('cart', $cart);
+    }
+    return redirect()->back()->with('success', 'Đã xóa sản phẩm!');
+})->name('cart.remove');
+
+/*
+|--------------------------------------------------------------------------
+| YÊU THÍCH (WISHLIST)
+|--------------------------------------------------------------------------
+*/
+Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+Route::post('/wishlist/toggle/{productId}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+Route::get('/home', function () {
+    $products = Product::latest()->get();
+    return view('home', compact('products'));
+})->name('home');
+/*
+|--------------------------------------------------------------------------
+| THÔNG TIN TÀI KHOẢN (PROFILE)
+|--------------------------------------------------------------------------
+*/
+Route::get('/profile', function () {
+    return view('profile');
+})->name('profile')->middleware('auth');
+// Route hiển thị trang thêm địa chỉ
+Route::get('/address/add', function () {
+    return view('address_add');
+})->middleware('auth')->name('address.add');
+
+// Route xử lý lưu địa chỉ
+Route::post('/address/add', function (\Illuminate\Http\Request $request) {
+    $request->validate([
+        'phone' => 'required',
+        'address' => 'required',
+    ]);
+
+    $user = Auth::user();
+    $user->phone = $request->phone;
+    $user->address = $request->address;
+    $user->save();
+
+    return redirect('/profile')->with('success', 'Cập nhật địa chỉ thành công!');
+})->middleware('auth')->name('address.store');
+// Route hiển thị trang thêm địa chỉ
+Route::get('/address/add', function () {
+    return view('address_add');
+})->middleware('auth')->name('address.add');
+
+// Route xử lý lưu địa chỉ
+Route::post('/address/add', function (\Illuminate\Http\Request $request) {
+    $request->validate([
+        'phone' => 'required',
+        'address' => 'required',
+    ]);
+
+    $user = Auth::user();
+    $user->phone = $request->phone;
+    $user->address = $request->address;
+    $user->save();
+
+    return redirect('/profile')->with('success', 'Cập nhật địa chỉ thành công!');
+})->middleware('auth')->name('address.store');

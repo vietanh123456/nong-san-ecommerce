@@ -1,119 +1,111 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nông Sản Việt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
 
-@section('content')
-<div class="max-w-7xl mx-auto px-4 py-8">
-    <!-- Banner Chào mừng -->
-    <div class="bg-emerald-800 text-white rounded-2xl p-8 mb-8 text-center shadow-md">
-        <h1 class="text-3xl font-bold mb-2">Chào mừng đến với Sàn Nông Sản Việt!</h1>
-        <p class="text-emerald-100 mb-6">Nơi kết nối nông sản tươi sạch và đặc sản vùng miền trên toàn quốc.</p>
-        
-        <!-- Thanh Tìm Kiếm Trực Tiếp -->
-        <form action="{{ route('products.index') }}" method="GET" class="max-w-xl mx-auto flex gap-2">
-            <input type="text" name="search" placeholder="Nhập tên nông sản cần tìm..." 
-                   class="flex-1 px-4 py-3 rounded-xl text-gray-800 border-0 focus:ring-2 focus:ring-emerald-400 outline-none shadow">
-            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl transition shadow">
-                Tìm kiếm
-            </button>
-        </form>
-    </div>
+    <!-- HEADER / NAVBAR -->
+    <header class="bg-emerald-800 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="{{ route('home') }}" class="text-2xl font-bold flex items-center gap-2">
+                🌱 Nông Sản Việt
+            </a>
 
-    <!-- Khối 1: Danh mục nông sản nổi bật -->
-    <div class="mb-10">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4 border-l-4 border-emerald-600 pl-3">Danh Mục Nông Sản</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="{{ route('products.index', ['category_id' => 1]) }}" class="bg-emerald-50 hover:bg-emerald-100 p-4 rounded-xl text-center border border-emerald-200 transition">
-                <span class="text-3xl">🍎</span>
-                <p class="font-semibold text-emerald-800 mt-2">Trái Cây Tươi</p>
-            </a>
-            <a href="{{ route('products.index', ['category_id' => 2]) }}" class="bg-emerald-50 hover:bg-emerald-100 p-4 rounded-xl text-center border border-emerald-200 transition">
-                <span class="text-3xl">🥦</span>
-                <p class="font-semibold text-emerald-800 mt-2">Rau Củ Hữu Cơ</p>
-            </a>
-            <a href="{{ route('products.index', ['category_id' => 3]) }}" class="bg-emerald-50 hover:bg-emerald-100 p-4 rounded-xl text-center border border-emerald-200 transition">
-                <span class="text-3xl">☕</span>
-                <p class="font-semibold text-emerald-800 mt-2">Đặc Sản Vùng Miền</p>
-            </a>
-            <a href="{{ route('products.index', ['category_id' => 4]) }}" class="bg-emerald-50 hover:bg-emerald-100 p-4 rounded-xl text-center border border-emerald-200 transition">
-                <span class="text-3xl">🌾</span>
-                <p class="font-semibold text-emerald-800 mt-2">Nông Sản Khô</p>
-            </a>
+            <!-- THANH TÌM KIẾM -->
+            <form action="{{ route('home') }}" method="GET" class="flex-1 max-w-md mx-6">
+                <input type="text" name="search" value="{{ request('search') }}" 
+                       placeholder="Tìm kiếm sản phẩm (Xoài, Bơ, Cam...)..." 
+                       class="w-full px-4 py-2 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+            </form>
+
+            <div class="flex items-center gap-3">
+                <!-- NÚT YÊU THÍCH -->
+                <a href="{{ route('wishlist.index') }}" class="bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-medium transition">
+                    ❤️ Yêu thích <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">{{ $wishlistCount ?? 0 }}</span>
+                </a>
+
+                <!-- NÚT GIỎ HÀNG -->
+                <a href="{{ route('cart.index') }}" class="bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-medium transition">
+                    🛒 Giỏ hàng <span class="bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">{{ count(session('cart', [])) }}</span>
+                </a>
+
+                <!-- AUTH (ĐĂNG NHẬP / ĐĂNG XUẤT) -->
+                @auth
+                    <span class="text-sm font-medium text-emerald-100">👤 {{ Auth::user()->name }}</span>
+                    <form action="{{ route('logout') }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                            Đăng xuất
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                        Đăng nhập
+                    </a>
+                @endauth
+            </div>
         </div>
-    </div>
+    </header>
 
-    <!-- Khối 2: Danh sách sản phẩm gợi ý -->
-    <div>
-        <h2 class="text-2xl font-bold text-gray-800 mb-4 border-l-4 border-emerald-600 pl-3">Sản Phẩm Nổi Bật</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            
-            <!-- Thẻ sản phẩm 1 -->
-            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition border border-gray-100 overflow-hidden">
-                <div class="h-48 bg-gray-100 flex items-center justify-center text-5xl">🥭</div>
-                <div class="p-4">
-                    <span class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded">Đặc sản Miền Tây</span>
-                    <h3 class="font-bold text-gray-800 text-lg mt-1">Xoài Cát Hòa Lộc</h3>
-                    <p class="text-emerald-600 font-bold mt-2">85.000đ / kg</p>
-                    <div class="mt-4 flex gap-2">
-                        <button class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 rounded-lg transition">Thêm vào giỏ</button>
-                        <form action="{{ route('wishlist.toggle', 1) }}" method="POST">
+    <!-- MAIN CONTENT (DANH SÁCH SẢN PHẨM) -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        @if(session('success'))
+            <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            @forelse($products as $product)
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col justify-between">
+                    <div>
+                        <!-- ẢNH SẢN PHẨM -->
+                        <div class="h-48 bg-emerald-50 flex items-center justify-center p-4">
+                            @if($product->image)
+                                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="h-full object-contain">
+                            @else
+                                <span class="text-6xl">🥑</span>
+                            @endif
+                        </div>
+
+                        <!-- THÔNG TIN SẢN PHẨM -->
+                        <div class="p-4">
+                            <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-md font-medium">Nông Sản</span>
+                            <h3 class="font-bold text-gray-800 text-lg mt-2">{{ $product->name }}</h3>
+                            <p class="text-emerald-600 font-bold text-lg mt-1">{{ number_format($product->price, 0, ',', '.') }}đ</p>
+                        </div>
+                    </div>
+
+                    <!-- THAO TÁC (FORM MUA HÀNG & THẢ TIM) -->
+                    <div class="p-4 pt-0 flex items-center gap-2">
+                        <!-- FORM THÊM VÀO GIỎ -->
+                        <form action="{{ route('cart.add', $product->id) }}" method="POST" class="flex-1">
                             @csrf
-                            <button type="submit" class="p-2 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-500 text-gray-500 transition" title="Thêm vào yêu thích">❤️</button>
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
+                                Thêm vào giỏ
+                            </button>
+                        </form>
+
+                        <!-- FORM YÊU THÍCH -->
+                        <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-lg transition" title="Yêu thích">
+                                ❤️
+                            </button>
                         </form>
                     </div>
                 </div>
-            </div>
-
-            <!-- Thẻ sản phẩm 2 -->
-            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition border border-gray-100 overflow-hidden">
-                <div class="h-48 bg-gray-100 flex items-center justify-center text-5xl">🍓</div>
-                <div class="p-4">
-                    <span class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded">Đà Lạt</span>
-                    <h3 class="font-bold text-gray-800 text-lg mt-1">Dâu Tây Giống Nhật</h3>
-                    <p class="text-emerald-600 font-bold mt-2">150.000đ / hộp</p>
-                    <div class="mt-4 flex gap-2">
-                        <button class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 rounded-lg transition">Thêm vào giỏ</button>
-                        <form action="{{ route('wishlist.toggle', 2) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="p-2 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-500 text-gray-500 transition" title="Thêm vào yêu thích">❤️</button>
-                        </form>
-                    </div>
+            @empty
+                <div class="col-span-full text-center py-12 text-gray-500">
+                    Không tìm thấy sản phẩm nào!
                 </div>
-            </div>
-
-            <!-- Thẻ sản phẩm 3 -->
-            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition border border-gray-100 overflow-hidden">
-                <div class="h-48 bg-gray-100 flex items-center justify-center text-5xl">☕</div>
-                <div class="p-4">
-                    <span class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded">Tây Nguyên</span>
-                    <h3 class="font-bold text-gray-800 text-lg mt-1">Cà Phê Moka Cầu Đất</h3>
-                    <p class="text-emerald-600 font-bold mt-2">220.000đ / kg</p>
-                    <div class="mt-4 flex gap-2">
-                        <button class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 rounded-lg transition">Thêm vào giỏ</button>
-                        <form action="{{ route('wishlist.toggle', 3) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="p-2 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-500 text-gray-500 transition" title="Thêm vào yêu thích">❤️</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Thẻ sản phẩm 4 -->
-            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition border border-gray-100 overflow-hidden">
-                <div class="h-48 bg-gray-100 flex items-center justify-center text-5xl">🥑</div>
-                <div class="p-4">
-                    <span class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded">Đắk Lắk</span>
-                    <h3 class="font-bold text-gray-800 text-lg mt-1">Bơ Sáp 034</h3>
-                    <p class="text-emerald-600 font-bold mt-2">60.000đ / kg</p>
-                    <div class="mt-4 flex gap-2">
-                        <button class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 rounded-lg transition">Thêm vào giỏ</button>
-                        <form action="{{ route('wishlist.toggle', 4) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="p-2 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-500 text-gray-500 transition" title="Thêm vào yêu thích">❤️</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
+            @endforelse
         </div>
-    </div>
-</div>
-@endsection
+    </main>
+
+</body>
+</html>
