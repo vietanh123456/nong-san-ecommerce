@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>@yield('title', 'Seller Dashboard')</title>
 
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
@@ -19,6 +22,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 20px;
             padding: 16px 32px;
             color: white;
             background: #166534;
@@ -27,6 +31,17 @@
         .header a {
             color: white;
             text-decoration: none;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-nav a:hover {
+            text-decoration: underline;
         }
 
         .container {
@@ -60,25 +75,42 @@
             cursor: pointer;
         }
 
-        .btn-warning { background: #d97706; }
-        .btn-danger { background: #dc2626; }
-        .btn-secondary { background: #4b5563; }
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-warning {
+            background: #d97706;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+        }
+
+        .btn-secondary {
+            background: #4b5563;
+        }
 
         table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        th, td {
+        th,
+        td {
             padding: 12px;
             border-bottom: 1px solid #e5e7eb;
             text-align: left;
             vertical-align: middle;
         }
 
-        th { background: #f9fafb; }
+        th {
+            background: #f9fafb;
+        }
 
-        .table-wrapper { overflow-x: auto; }
+        .table-wrapper {
+            overflow-x: auto;
+        }
 
         .product-image {
             width: 72px;
@@ -110,7 +142,9 @@
             flex-wrap: wrap;
         }
 
-        .actions form { margin: 0; }
+        .actions form {
+            margin: 0;
+        }
 
         .badge {
             display: inline-block;
@@ -129,7 +163,9 @@
             background: #fee2e2;
         }
 
-        input, select, textarea {
+        input,
+        select,
+        textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #d1d5db;
@@ -142,7 +178,9 @@
             font-weight: bold;
         }
 
-        .form-group { margin-bottom: 18px; }
+        .form-group {
+            margin-bottom: 18px;
+        }
 
         .error {
             display: block;
@@ -150,17 +188,52 @@
             color: #dc2626;
             font-size: 14px;
         }
+
+        @media (max-width: 768px) {
+            .header {
+                align-items: flex-start;
+                flex-direction: column;
+                padding: 16px;
+            }
+
+            .page-heading {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .container {
+                width: min(100% - 20px, 1200px);
+                margin: 18px auto;
+            }
+
+            .card {
+                padding: 16px;
+            }
+        }
     </style>
 
     @stack('styles')
 </head>
+
 <body>
     <header class="header">
-        <a href="{{ route('seller.products.index') }}">
-            <strong>Seller Dashboard</strong>
-        </a>
+        <nav class="header-nav">
+            <a href="{{ route('seller.dashboard') }}">
+                <strong>Seller Dashboard</strong>
+            </a>
 
-        <span>{{ auth()->user()->name ?? 'Người bán' }}</span>
+            <a href="{{ route('seller.products.index') }}">
+                Sản phẩm
+            </a>
+
+            <a href="{{ route('seller.products.create') }}">
+                Thêm sản phẩm
+            </a>
+        </nav>
+
+        <span>
+            {{ auth()->user()->name ?? 'Người bán' }}
+        </span>
     </header>
 
     <main class="container">
@@ -173,6 +246,7 @@
         @if ($errors->any())
             <div class="alert alert-error">
                 <strong>Dữ liệu chưa hợp lệ:</strong>
+
                 <ul>
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
