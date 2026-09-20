@@ -11,6 +11,7 @@ use App\Http\Controllers\WishlistController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CheckoutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -151,3 +152,12 @@ Route::middleware('auth')
             SellerProductController::class
         );
     });
+
+Route::get('/checkout', [CheckoutController::class, 'index'])
+    ->name('checkout.index');
+
+Route::post('/checkout/coupon', [CheckoutController::class, 'applyCoupon'])
+    ->name('checkout.coupon.apply');
+
+Route::delete('/checkout/coupon', [CheckoutController::class, 'removeCoupon'])
+    ->name('checkout.coupon.remove');
