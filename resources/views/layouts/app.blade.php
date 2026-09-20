@@ -28,31 +28,44 @@
 
 <body class="bg-gray-50 flex flex-col min-h-screen">
     {{-- Header chính --}}
-    <header class="bg-[#0e5c36] text-white py-3.5 px-6 shadow-md sticky top-0 z-40">
-        <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
+    <header class="bg-[#0e5c36] text-white py-3.5 px-4 md:px-6 shadow-md sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
             {{-- Logo --}}
             <a
                 href="{{ route('home') }}"
                 class="text-xl font-bold flex items-center gap-2 hover:opacity-90 transition"
             >
-                🌱 <span>Nông Sản Việt</span>
+                <span>🌱</span>
+                <span>Nông Sản Việt</span>
             </a>
 
-            {{-- Menu bên phải --}}
-            <div class="flex flex-wrap items-center gap-3 md:gap-5 text-sm">
-                {{-- Danh sách sản phẩm --}}
+            {{-- Menu --}}
+            <nav class="flex flex-wrap items-center gap-2 md:gap-3 text-sm">
                 <a
                     href="{{ route('products.index') }}"
-                    class="hover:underline font-medium"
+                    class="inline-flex items-center px-3 py-2 rounded-lg hover:bg-white/10 font-medium transition"
                 >
                     Sản phẩm
                 </a>
 
-                {{-- Yêu thích --}}
+                {{-- Chỉ Seller mới thấy Dashboard --}}
+                @auth
+                    @if (auth()->user()->role === 'seller')
+                        <a
+                            href="{{ route('seller.dashboard') }}"
+                            class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg font-semibold transition"
+                        >
+                            <span>🏪</span>
+                            <span>Seller Dashboard</span>
+                        </a>
+                    @endif
+                @endauth
+
+                {{-- Yêu thích chỉ dành cho người đã đăng nhập --}}
                 @auth
                     <a
                         href="{{ route('wishlist.index') }}"
-                        class="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-white px-3 py-1.5 rounded-full text-sm font-medium transition"
+                        class="inline-flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-white px-3 py-2 rounded-full font-medium transition"
                     >
                         <span>❤️ Yêu thích</span>
 
@@ -65,7 +78,7 @@
                 {{-- Giỏ hàng --}}
                 <a
                     href="{{ route('cart.index') }}"
-                    class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition"
+                    class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-full font-medium transition"
                 >
                     <span>🛒 Giỏ hàng</span>
 
@@ -74,14 +87,15 @@
                     </span>
                 </a>
 
-                {{-- Thông tin đăng nhập --}}
+                {{-- Tài khoản --}}
                 @auth
-                    <div class="flex items-center gap-3 border-l border-white/20 pl-4">
+                    <div class="flex flex-wrap items-center gap-2 border-l border-white/20 pl-3">
                         <a
                             href="{{ route('profile') }}"
-                            class="font-semibold hover:underline flex items-center gap-1"
+                            class="inline-flex items-center gap-1 font-semibold hover:underline"
                         >
-                            👤 {{ auth()->user()->name }}
+                            <span>👤</span>
+                            <span>{{ auth()->user()->name }}</span>
                         </a>
 
                         <form
@@ -93,14 +107,14 @@
 
                             <button
                                 type="submit"
-                                class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                                class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"
                             >
                                 Đăng xuất
                             </button>
                         </form>
                     </div>
                 @else
-                    <div class="flex items-center gap-2 border-l border-white/20 pl-4">
+                    <div class="flex items-center gap-2 border-l border-white/20 pl-3">
                         <a
                             href="{{ route('login') }}"
                             class="hover:underline font-medium"
@@ -118,11 +132,11 @@
                         </a>
                     </div>
                 @endauth
-            </div>
+            </nav>
         </div>
     </header>
 
-    {{-- Thông báo --}}
+    {{-- Thông báo thành công --}}
     @if (session('success'))
         <div class="max-w-6xl w-full mx-auto mt-5 px-4">
             <div class="bg-emerald-100 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl">
@@ -131,6 +145,7 @@
         </div>
     @endif
 
+    {{-- Thông báo cảnh báo --}}
     @if (session('warning'))
         <div class="max-w-6xl w-full mx-auto mt-5 px-4">
             <div class="bg-amber-100 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl">
@@ -139,6 +154,7 @@
         </div>
     @endif
 
+    {{-- Thông báo lỗi --}}
     @if (session('error'))
         <div class="max-w-6xl w-full mx-auto mt-5 px-4">
             <div class="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
@@ -147,7 +163,7 @@
         </div>
     @endif
 
-    {{-- Nội dung trang --}}
+    {{-- Nội dung --}}
     <main class="flex-grow">
         @yield('content')
     </main>
