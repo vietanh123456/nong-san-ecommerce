@@ -1,6 +1,25 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $firstAvailableVariant = $product->variants
+        ->first(fn ($variant) => $variant->stock > 0);
+
+    $selectedVariantId = old(
+        'variant_id',
+        $firstAvailableVariant?->id
+    );
+
+    $selectedVariant = $product->variants
+        ->firstWhere('id', (int) $selectedVariantId);
+
+    $displayPrice = $selectedVariant?->price
+        ?? $product->price
+        ?? 0;
+
+    $displayStock = $selectedVariant?->stock ?? 0;
+@endphp
+
 <div class="max-w-5xl mx-auto py-8 px-4">
     <a
         href="{{ route('products.index') }}"
@@ -53,8 +72,11 @@
                     </span>
                 </div>
 
-                <p class="text-3xl font-bold text-emerald-600 mb-4">
-                    {{ number_format($product->price ?? 0, 0, ',', '.') }} đ
+                <p
+                    id="variant-price"
+                    class="text-3xl font-bold text-emerald-600 mb-4"
+                >
+                    {{ number_format($displayPrice, 0, ',', '.') }} đ
                 </p>
 
                 <div class="border-t border-b border-gray-100 py-4 my-4">
@@ -74,50 +96,120 @@
                     </p>
 
                     <p class="mt-2">
-                        <strong>Tồn kho:</strong>
-                        {{ $product->stock ?? 0 }}
+                        <strong>Tồn kho phân loại:</strong>
+
+                        <span id="variant-stock">
+                            {{ $displayStock }}
+                        </span>
                     </p>
                 </div>
             </div>
 
             {{-- Thêm vào giỏ hàng --}}
-            <form
-                action="{{ route('cart.add', $product) }}"
-                method="POST"
-            >
-                @csrf
-
-                <div class="flex items-center gap-4 mb-4">
-                    <label
-                        for="quantity"
-                        class="text-xs font-bold text-gray-700 uppercase"
-                    >
-                        Số lượng:
-                    </label>
-
-                    <input
-                        id="quantity"
-                        type="number"
-                        name="quantity"
-                        value="1"
-                        min="1"
-                        max="{{ max(1, $product->stock ?? 1) }}"
-                        class="w-20 px-3 py-2 border border-gray-200 rounded-xl text-center text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                    >
-                </div>
-
-                <button
-                    type="submit"
-                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl text-sm transition shadow-sm disabled:cursor-not-allowed disabled:bg-gray-400"
-                    @disabled(($product->stock ?? 0) <= 0)
+            @if ($product->variants->isNotEmpty())
+                <form
+                    action="{{ route('cart.add', $product) }}"
+                    method="POST"
                 >
-                    @if (($product->stock ?? 0) > 0)
-                        🛒 Thêm vào giỏ hàng
-                    @else
-                        Sản phẩm đã hết hàng
-                    @endif
-                </button>
-            </form>
+                    @csrf
+
+                    <div class="mb-4">
+                        <label
+                            for="variant_id"
+                            class="block text-xs font-bold text-gray-700 uppercase mb-2"
+                        >
+                            Phân loại sản phẩm:
+                        </label>
+
+                        <select
+                            id="variant_id"
+                            name="variant_id"
+                            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            required
+                        >
+                            <option value="">
+                                -- Chọn phân loại --
+                            </option>
+
+                            @foreach ($product->variants as $variant)
+                                <option
+                                    value="{{ $variant->id }}"
+                                    data-price="{{ (float) $variant->price }}"
+                                    data-stock="{{ $variant->stock }}"
+                                    @selected(
+                                        (int) $selectedVariantId ===
+                                        $variant->id
+                                    )
+                                    @disabled($variant->stock <= 0)
+                                >
+                                    {{ $variant->display_name }}
+                                    — {{ number_format($variant->price, 0, ',', '.') }} đ
+                                    @if ($variant->stock <= 0)
+                                        (Hết hàng)
+                                    @else
+                                        (Còn {{ $variant->stock }})
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+
+                        @error('variant_id')
+                            <p class="text-sm text-red-600 mt-1">
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label
+                            for="quantity"
+                            class="text-xs font-bold text-gray-700 uppercase"
+                        >
+                            Số lượng:
+                        </label>
+
+                        <input
+                            id="quantity"
+                            type="number"
+                            name="quantity"
+                            value="{{ old('quantity', 1) }}"
+                            min="1"
+                            max="{{ max(1, $displayStock) }}"
+                            class="w-24 px-3 py-2 border border-gray-200 rounded-xl text-center text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            required
+                        >
+                    </div>
+
+                    @error('quantity')
+                        <p class="text-sm text-red-600 mb-3">
+                            {{ $message }}
+                        </p>
+                    @enderror
+
+                    @error('product')
+                        <p class="text-sm text-red-600 mb-3">
+                            {{ $message }}
+                        </p>
+                    @enderror
+
+                    <button
+                        id="add-to-cart-button"
+                        type="submit"
+                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl text-sm transition shadow-sm disabled:cursor-not-allowed disabled:bg-gray-400"
+                        @disabled(!$firstAvailableVariant)
+                    >
+                        @if ($firstAvailableVariant)
+                            🛒 Thêm vào giỏ hàng
+                        @else
+                            Sản phẩm đã hết hàng
+                        @endif
+                    </button>
+                </form>
+            @else
+                <div class="bg-gray-100 text-gray-600 rounded-xl px-4 py-4 text-sm font-semibold text-center">
+                    Sản phẩm chưa có phân loại đang bán.
+                </div>
+            @endif
 
             {{-- Yêu thích --}}
             @auth
@@ -168,27 +260,18 @@
                             class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                             required
                         >
-                            <option value="">Chọn mức đánh giá</option>
-
-                            <option value="5" @selected(old('rating') == 5)>
-                                5 sao - Rất tốt
+                            <option value="">
+                                Chọn mức đánh giá
                             </option>
 
-                            <option value="4" @selected(old('rating') == 4)>
-                                4 sao - Tốt
-                            </option>
-
-                            <option value="3" @selected(old('rating') == 3)>
-                                3 sao - Bình thường
-                            </option>
-
-                            <option value="2" @selected(old('rating') == 2)>
-                                2 sao - Chưa tốt
-                            </option>
-
-                            <option value="1" @selected(old('rating') == 1)>
-                                1 sao - Không hài lòng
-                            </option>
+                            @for ($rating = 5; $rating >= 1; $rating--)
+                                <option
+                                    value="{{ $rating }}"
+                                    @selected(old('rating') == $rating)
+                                >
+                                    {{ $rating }} sao
+                                </option>
+                            @endfor
                         </select>
 
                         @error('rating')
@@ -230,7 +313,7 @@
                     </button>
 
                     <p class="text-xs text-gray-500">
-                        Đánh giá của bạn sẽ được đăng công khai ngay sau khi gửi.
+                        Đánh giá sẽ được xử lý theo chính sách của hệ thống.
                     </p>
                 </form>
             @else
@@ -254,7 +337,7 @@
         @endauth
     </div>
 
-    {{-- Danh sách đánh giá công khai --}}
+    {{-- Danh sách đánh giá --}}
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8 mt-8">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h2 class="text-xl font-bold text-gray-800">
@@ -305,12 +388,66 @@
                 <p class="font-semibold text-gray-700">
                     Sản phẩm chưa có đánh giá.
                 </p>
-
-                <p class="text-sm text-gray-500 mt-1">
-                    Hãy là người đầu tiên chia sẻ cảm nhận.
-                </p>
             </div>
         @endif
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    const variantSelect = document.getElementById('variant_id');
+    const priceElement = document.getElementById('variant-price');
+    const stockElement = document.getElementById('variant-stock');
+    const quantityInput = document.getElementById('quantity');
+    const addButton = document.getElementById('add-to-cart-button');
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('vi-VN').format(value) + ' đ';
+    }
+
+    function updateSelectedVariant() {
+        if (!variantSelect) {
+            return;
+        }
+
+        const option = variantSelect.options[
+            variantSelect.selectedIndex
+        ];
+
+        if (!option || !option.value) {
+            priceElement.textContent = 'Vui lòng chọn phân loại';
+            stockElement.textContent = '0';
+            quantityInput.max = 1;
+            addButton.disabled = true;
+
+            return;
+        }
+
+        const price = Number(option.dataset.price || 0);
+        const stock = Number(option.dataset.stock || 0);
+
+        priceElement.textContent = formatCurrency(price);
+        stockElement.textContent = stock;
+        quantityInput.max = Math.max(1, stock);
+
+        if (Number(quantityInput.value) > stock) {
+            quantityInput.value = Math.max(1, stock);
+        }
+
+        addButton.disabled = stock <= 0;
+        addButton.textContent = stock > 0
+            ? '🛒 Thêm vào giỏ hàng'
+            : 'Sản phẩm đã hết hàng';
+    }
+
+    if (variantSelect) {
+        variantSelect.addEventListener(
+            'change',
+            updateSelectedVariant
+        );
+
+        updateSelectedVariant();
+    }
+</script>
+@endpush

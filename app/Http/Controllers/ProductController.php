@@ -61,6 +61,14 @@ class ProductController extends Controller
         $product = Product::query()
             ->with([
                 'category',
+
+                'variants' => function ($query): void {
+                    $query
+                        ->where('status', true)
+                        ->with('unit')
+                        ->orderBy('price');
+                },
+
                 'reviews' => function ($query): void {
                     $query
                         ->approved()
@@ -74,7 +82,10 @@ class ProductController extends Controller
         $reviewCount = $product->reviews->count();
 
         $averageRating = $reviewCount > 0
-            ? round((float) $product->reviews->avg('rating'), 1)
+            ? round(
+                (float) $product->reviews->avg('rating'),
+                1
+            )
             : 0;
 
         return view(

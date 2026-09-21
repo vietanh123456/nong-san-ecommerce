@@ -73,12 +73,15 @@ class ProductController extends Controller
 
                 foreach ($variants as $variant) {
                     $product->variants()->create([
-                        'unit_id' => $variant['unit_id'],
+                        'name' => $variant['name'],
+                        'unit_id' => $variant['unit_id'] ?? null,
                         'sku' => $variant['sku'],
-                        'quantity' => $variant['quantity'],
+                        'quantity' => $variant['quantity'] ?? null,
                         'price' => $variant['price'],
                         'stock' => $variant['stock'],
-                        'status' => (bool) ($variant['status'] ?? true),
+                        'status' => (bool) (
+                            $variant['status'] ?? true
+                        ),
                     ]);
                 }
             });
@@ -99,7 +102,11 @@ class ProductController extends Controller
     {
         $this->ensureProductBelongsToSeller($product);
 
-        $product->load(['category', 'variants.unit', 'reviews.user']);
+        $product->load([
+            'category',
+            'variants.unit',
+            'reviews.user',
+        ]);
 
         return view('seller.products.show', compact('product'));
     }
@@ -165,9 +172,10 @@ class ProductController extends Controller
                     $variantId = $variantData['id'] ?? null;
 
                     $values = [
-                        'unit_id' => $variantData['unit_id'],
+                        'name' => $variantData['name'],
+                        'unit_id' => $variantData['unit_id'] ?? null,
                         'sku' => $variantData['sku'],
-                        'quantity' => $variantData['quantity'],
+                        'quantity' => $variantData['quantity'] ?? null,
                         'price' => $variantData['price'],
                         'stock' => $variantData['stock'],
                         'status' => (bool) (
@@ -181,7 +189,8 @@ class ProductController extends Controller
 
                         $variant->update($values);
                     } else {
-                        $variant = $product->variants()->create($values);
+                        $variant = $product->variants()
+                            ->create($values);
                     }
 
                     $keptVariantIds[] = $variant->id;
