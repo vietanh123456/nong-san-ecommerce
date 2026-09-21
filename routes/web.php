@@ -11,11 +11,13 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\ProductBatchController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
+use App\Http\Controllers\Seller\OrderController as SellerOrderController;
 use App\Http\Controllers\TraceController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\OrderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -128,6 +130,9 @@ Route::delete('/checkout/coupon', [
     'removeCoupon',
 ])->name('checkout.coupon.remove');
 
+Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])
+    ->name('checkout.placeOrder');
+
 /*
 |--------------------------------------------------------------------------
 | Chức năng yêu cầu đăng nhập
@@ -163,6 +168,12 @@ Route::middleware('auth')->group(function (): void {
         ReviewController::class,
         'store',
     ])->name('reviews.store');
+
+    Route::get('/orders', [OrderController::class, 'index'])
+    ->name('orders.index');
+
+    Route::get('/orders/{order}', [OrderController::class, 'show'])
+    ->name('orders.show');
 });
 
 /*
@@ -199,6 +210,17 @@ Route::middleware(['auth', 'seller'])
             CertificateFileController::class,
             'seller',
         ])->name('certificates.show');
+
+        Route::get('/orders', [SellerOrderController::class, 'index'])
+        ->name('orders.index');
+
+        Route::get('/orders/{order}', [SellerOrderController::class, 'show'])
+        ->name('orders.show');
+
+        Route::patch('/orders/{order}/status', [
+            SellerOrderController::class,
+            'updateStatus'
+        ])->name('orders.status');
     });
 
 /*
@@ -266,3 +288,19 @@ Route::middleware(['auth', 'admin'])
             'reviewReview',
         ])->name('reviews.review');
     });
+
+    /*
+|--------------------------------------------------------------------------
+| VNPay
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/vnpay/return',
+    [CheckoutController::class, 'vnpayReturn']
+)->name('vnpay.return');
+
+Route::get(
+    '/vnpay/ipn',
+    [CheckoutController::class, 'vnpayIpn']
+)->name('vnpay.ipn');

@@ -27,9 +27,12 @@
 </head>
 
 <body class="bg-gray-50 flex flex-col min-h-screen">
+
     {{-- Header chính --}}
     <header class="bg-[#0e5c36] text-white py-3.5 px-6 shadow-md sticky top-0 z-40">
+
         <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
+
             {{-- Logo --}}
             <a
                 href="{{ route('home') }}"
@@ -40,6 +43,7 @@
 
             {{-- Menu bên phải --}}
             <div class="flex flex-wrap items-center gap-3 md:gap-5 text-sm">
+
                 {{-- Danh sách sản phẩm --}}
                 <a
                     href="{{ route('products.index') }}"
@@ -48,6 +52,7 @@
                     Sản phẩm
                 </a>
 
+                {{-- Admin Panel --}}
                 @auth
                     @if (auth()->user()->role === 'admin')
                         <a
@@ -85,10 +90,26 @@
                     </span>
                 </a>
 
+                {{-- Lịch sử đơn hàng --}}
+                @auth
+                    @if (auth()->user()->role !== 'admin')
+                        <a
+                            href="{{ route('orders.index') }}"
+                            class="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 text-white px-3 py-1.5 rounded-full text-sm font-medium transition"
+                        >
+                            <span>📦 Đơn hàng</span>
+                        </a>
+                    @endif
+                @endauth
+
                 {{-- Thông tin đăng nhập --}}
                 @auth
+
                     <div class="flex items-center gap-3 border-l border-white/20 pl-4">
+
+                        {{-- ADMIN --}}
                         @if (auth()->user()->role === 'admin')
+
                             <a
                                 href="{{ route('admin.dashboard') }}"
                                 class="font-semibold hover:underline flex items-center gap-1"
@@ -102,24 +123,32 @@
                             >
                                 Hồ sơ
                             </a>
+
+                        {{-- SELLER --}}
                         @elseif (auth()->user()->role === 'seller')
+
                             <a
                                 href="{{ route('seller.dashboard') }}"
                                 class="font-semibold hover:underline"
                             >
                                 🏪 Kênh người bán
                             </a>
+
                         @endif
 
+                        {{-- Hồ sơ người dùng / seller --}}
                         @if (auth()->user()->role !== 'admin')
+
                             <a
                                 href="{{ route('profile') }}"
                                 class="font-semibold hover:underline flex items-center gap-1"
                             >
                                 👤 {{ auth()->user()->name }}
                             </a>
+
                         @endif
 
+                        {{-- Đăng xuất --}}
                         <form
                             action="{{ route('logout') }}"
                             method="POST"
@@ -133,10 +162,16 @@
                             >
                                 Đăng xuất
                             </button>
+
                         </form>
+
                     </div>
+
                 @else
+
+                    {{-- Chưa đăng nhập --}}
                     <div class="flex items-center gap-2 border-l border-white/20 pl-4">
+
                         <a
                             href="{{ route('login') }}"
                             class="hover:underline font-medium"
@@ -152,60 +187,110 @@
                         >
                             Đăng ký
                         </a>
+
                     </div>
+
                 @endauth
+
             </div>
+
         </div>
+
     </header>
 
-    {{-- Thông báo --}}
+    {{-- =====================================================
+        THÔNG BÁO
+    ====================================================== --}}
+
     @php($isAdminArea = request()->routeIs('admin.*'))
 
+    {{-- Thành công --}}
     @if (session('success'))
-        <div class="{{ $isAdminArea ? 'bg-slate-950 px-4 pt-4' : 'max-w-6xl w-full mx-auto mt-5 px-4' }}">
+
+        <div class="{{ $isAdminArea
+            ? 'bg-slate-950 px-4 pt-4'
+            : 'max-w-6xl w-full mx-auto mt-5 px-4'
+        }}">
+
             <div
                 role="status"
-                class="{{ $isAdminArea ? 'max-w-7xl mx-auto bg-emerald-300/15 border border-emerald-300/30 text-emerald-100 px-4 py-3 rounded-xl shadow-sm' : 'bg-emerald-100 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl' }}"
+                class="{{ $isAdminArea
+                    ? 'max-w-7xl mx-auto bg-emerald-300/15 border border-emerald-300/30 text-emerald-100 px-4 py-3 rounded-xl shadow-sm'
+                    : 'bg-emerald-100 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl'
+                }}"
             >
                 {{ session('success') }}
             </div>
+
         </div>
+
     @endif
 
+    {{-- Cảnh báo --}}
     @if (session('warning'))
-        <div class="{{ $isAdminArea ? 'bg-slate-950 px-4 pt-4' : 'max-w-6xl w-full mx-auto mt-5 px-4' }}">
+
+        <div class="{{ $isAdminArea
+            ? 'bg-slate-950 px-4 pt-4'
+            : 'max-w-6xl w-full mx-auto mt-5 px-4'
+        }}">
+
             <div
                 role="status"
-                class="{{ $isAdminArea ? 'max-w-7xl mx-auto bg-amber-300/15 border border-amber-300/30 text-amber-100 px-4 py-3 rounded-xl shadow-sm' : 'bg-amber-100 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl' }}"
+                class="{{ $isAdminArea
+                    ? 'max-w-7xl mx-auto bg-amber-300/15 border border-amber-300/30 text-amber-100 px-4 py-3 rounded-xl shadow-sm'
+                    : 'bg-amber-100 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl'
+                }}"
             >
                 {{ session('warning') }}
             </div>
+
         </div>
+
     @endif
 
+    {{-- Lỗi --}}
     @if (session('error'))
-        <div class="{{ $isAdminArea ? 'bg-slate-950 px-4 pt-4' : 'max-w-6xl w-full mx-auto mt-5 px-4' }}">
+
+        <div class="{{ $isAdminArea
+            ? 'bg-slate-950 px-4 pt-4'
+            : 'max-w-6xl w-full mx-auto mt-5 px-4'
+        }}">
+
             <div
                 role="alert"
-                class="{{ $isAdminArea ? 'max-w-7xl mx-auto bg-rose-300/15 border border-rose-300/30 text-rose-100 px-4 py-3 rounded-xl shadow-sm' : 'bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl' }}"
+                class="{{ $isAdminArea
+                    ? 'max-w-7xl mx-auto bg-rose-300/15 border border-rose-300/30 text-rose-100 px-4 py-3 rounded-xl shadow-sm'
+                    : 'bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl'
+                }}"
             >
                 {{ session('error') }}
             </div>
+
         </div>
+
     @endif
 
-    {{-- Nội dung trang --}}
+    {{-- =====================================================
+        NỘI DUNG TRANG
+    ====================================================== --}}
+
     <main class="flex-grow">
         @yield('content')
     </main>
 
-    {{-- Footer --}}
+    {{-- =====================================================
+        FOOTER
+    ====================================================== --}}
+
     <footer class="bg-gray-800 text-gray-400 py-6 text-center text-xs border-t border-gray-700 mt-auto">
+
         <p>
             © 2026 Nông Sản Việt. Tất cả quyền được bảo lưu.
         </p>
+
     </footer>
 
     @stack('scripts')
+
 </body>
 </html>
