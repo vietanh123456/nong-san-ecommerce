@@ -1,12 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CertificateFileController;
 use App\Http\Controllers\ProductController as CustomerProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Seller\DashboardController;
+use App\Http\Controllers\Seller\ProductBatchController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
+use App\Http\Controllers\TraceController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -57,6 +61,14 @@ Route::get('/products', [CustomerProductController::class, 'index'])
 
 Route::get('/products/{id}', [CustomerProductController::class, 'show'])
     ->name('products.show');
+
+Route::get('/trace/{batchCode}', [TraceController::class, 'show'])
+    ->name('trace.show');
+
+Route::get('/trace/certificates/{certificate}', [
+    CertificateFileController::class,
+    'public',
+])->name('trace.certificates.show');
 
 /*
 |--------------------------------------------------------------------------
@@ -152,4 +164,35 @@ Route::middleware(['auth', 'seller'])
             'products',
             SellerProductController::class
         );
+
+        Route::resource('batches', ProductBatchController::class);
+        Route::post('batches/{batch}/certificates', [
+            ProductBatchController::class,
+            'storeCertificate',
+        ])->name('batches.certificates.store');
+
+        Route::get('certificates/{certificate}', [
+            CertificateFileController::class,
+            'seller',
+        ])->name('certificates.show');
+    });
+
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function (): void {
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/users', [AdminDashboardController::class, 'users'])->name('users.index');
+        Route::patch('/users/{user}/role', [AdminDashboardController::class, 'updateUserRole'])->name('users.role');
+        Route::patch('/users/{user}/status', [AdminDashboardController::class, 'toggleUserStatus'])->name('users.status');
+        Route::get('/products', [AdminDashboardController::class, 'products'])->name('products.index');
+        Route::patch('/products/{product}/toggle', [AdminDashboardController::class, 'toggleProduct'])->name('products.toggle');
+        Route::get('/certificates', [AdminDashboardController::class, 'certificates'])->name('certificates.index');
+        Route::patch('/certificates/{certificate}', [AdminDashboardController::class, 'reviewCertificate'])->name('certificates.review');
+        Route::get('/certificates/{certificate}/file', [
+            CertificateFileController::class,
+            'admin',
+        ])->name('certificates.file');
+        Route::get('/reviews', [AdminDashboardController::class, 'reviews'])->name('reviews.index');
+        Route::patch('/reviews/{review}', [AdminDashboardController::class, 'reviewReview'])->name('reviews.review');
     });
