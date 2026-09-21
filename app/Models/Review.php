@@ -16,6 +16,7 @@ class Review extends Model
         'user_id',
         'rating',
         'comment',
+        'image',
         'status',
         'moderated_by',
         'moderated_at',
@@ -46,11 +47,17 @@ class Review extends Model
 
     public function scopeApproved($query)
     {
-        return $query->where('status', self::STATUS_APPROVED);
+        return $query->where(
+            'status',
+            self::STATUS_APPROVED
+        );
     }
 
     public function scopePending($query)
     {
-        return $query->where('status', self::STATUS_PENDING);
+        return $query->where(
+            'status',
+            self::STATUS_PENDING
+        );
     }
 }
