@@ -1,17 +1,21 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CertificateFileController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ProductController as CustomerProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Seller\DashboardController;
+use App\Http\Controllers\Seller\ProductBatchController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
+use App\Http\Controllers\TraceController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CheckoutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,7 +45,7 @@ Route::get('/', function (Request $request) {
 
 /*
 |--------------------------------------------------------------------------
-| Chuyển đường dẫn /home về trang chủ
+| Chuyển /home về trang chủ
 |--------------------------------------------------------------------------
 */
 
@@ -58,6 +62,14 @@ Route::get('/products', [CustomerProductController::class, 'index'])
 
 Route::get('/products/{id}', [CustomerProductController::class, 'show'])
     ->name('products.show');
+
+Route::get('/trace/{batchCode}', [TraceController::class, 'show'])
+    ->name('trace.show');
+
+Route::get('/trace/certificates/{certificate}', [
+    CertificateFileController::class,
+    'public',
+])->name('trace.certificates.show');
 
 /*
 |--------------------------------------------------------------------------
@@ -99,6 +111,25 @@ Route::delete('/cart/remove/{product}', [CartController::class, 'remove'])
 
 /*
 |--------------------------------------------------------------------------
+| Checkout
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/checkout', [CheckoutController::class, 'index'])
+    ->name('checkout.index');
+
+Route::post('/checkout/coupon', [
+    CheckoutController::class,
+    'applyCoupon',
+])->name('checkout.coupon.apply');
+
+Route::delete('/checkout/coupon', [
+    CheckoutController::class,
+    'removeCoupon',
+])->name('checkout.coupon.remove');
+
+/*
+|--------------------------------------------------------------------------
 | Chức năng yêu cầu đăng nhập
 |--------------------------------------------------------------------------
 */
@@ -110,28 +141,28 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/profile', [ProfileController::class, 'index'])
         ->name('profile');
 
-    Route::post(
-        '/address/add',
-        [ProfileController::class, 'storeAddress']
-    )->name('address.store');
+    Route::post('/address/add', [
+        ProfileController::class,
+        'storeAddress',
+    ])->name('address.store');
 
-    Route::delete(
-        '/address/delete/{address}',
-        [ProfileController::class, 'destroyAddress']
-    )->name('address.destroy');
+    Route::delete('/address/delete/{address}', [
+        ProfileController::class,
+        'destroyAddress',
+    ])->name('address.destroy');
 
     Route::get('/wishlist', [WishlistController::class, 'index'])
         ->name('wishlist.index');
 
-    Route::post(
-        '/wishlist/toggle/{product}',
-        [WishlistController::class, 'toggle']
-    )->name('wishlist.toggle');
+    Route::post('/wishlist/toggle/{product}', [
+        WishlistController::class,
+        'toggle',
+    ])->name('wishlist.toggle');
 
-    Route::post(
-        '/products/{product}/reviews',
-        [ReviewController::class, 'store']
-    )->name('reviews.store');
+    Route::post('/products/{product}/reviews', [
+        ReviewController::class,
+        'store',
+    ])->name('reviews.store');
 });
 
 /*
@@ -140,24 +171,98 @@ Route::middleware('auth')->group(function (): void {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth')
+Route::middleware(['auth', 'seller'])
     ->prefix('seller')
     ->name('seller.')
     ->group(function (): void {
-        Route::get('/dashboard', [DashboardController::class, 'index'])
-            ->name('dashboard');
+        Route::get('/dashboard', [
+            DashboardController::class,
+            'index',
+        ])->name('dashboard');
 
         Route::resource(
             'products',
             SellerProductController::class
         );
+
+        Route::resource(
+            'batches',
+            ProductBatchController::class
+        );
+
+        Route::post('batches/{batch}/certificates', [
+            ProductBatchController::class,
+            'storeCertificate',
+        ])->name('batches.certificates.store');
+
+        Route::get('certificates/{certificate}', [
+            CertificateFileController::class,
+            'seller',
+        ])->name('certificates.show');
     });
 
-Route::get('/checkout', [CheckoutController::class, 'index'])
-    ->name('checkout.index');
+/*
+|--------------------------------------------------------------------------
+| Khu vực Admin
+|--------------------------------------------------------------------------
+*/
 
-Route::post('/checkout/coupon', [CheckoutController::class, 'applyCoupon'])
-    ->name('checkout.coupon.apply');
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function (): void {
+        Route::get('/', [
+            AdminDashboardController::class,
+            'index',
+        ])->name('dashboard');
 
-Route::delete('/checkout/coupon', [CheckoutController::class, 'removeCoupon'])
-    ->name('checkout.coupon.remove');
+        Route::get('/users', [
+            AdminDashboardController::class,
+            'users',
+        ])->name('users.index');
+
+        Route::patch('/users/{user}/role', [
+            AdminDashboardController::class,
+            'updateUserRole',
+        ])->name('users.role');
+
+        Route::patch('/users/{user}/status', [
+            AdminDashboardController::class,
+            'toggleUserStatus',
+        ])->name('users.status');
+
+        Route::get('/products', [
+            AdminDashboardController::class,
+            'products',
+        ])->name('products.index');
+
+        Route::patch('/products/{product}/toggle', [
+            AdminDashboardController::class,
+            'toggleProduct',
+        ])->name('products.toggle');
+
+        Route::get('/certificates', [
+            AdminDashboardController::class,
+            'certificates',
+        ])->name('certificates.index');
+
+        Route::patch('/certificates/{certificate}', [
+            AdminDashboardController::class,
+            'reviewCertificate',
+        ])->name('certificates.review');
+
+        Route::get('/certificates/{certificate}/file', [
+            CertificateFileController::class,
+            'admin',
+        ])->name('certificates.file');
+
+        Route::get('/reviews', [
+            AdminDashboardController::class,
+            'reviews',
+        ])->name('reviews.index');
+
+        Route::patch('/reviews/{review}', [
+            AdminDashboardController::class,
+            'reviewReview',
+        ])->name('reviews.review');
+    });

@@ -19,7 +19,10 @@ class ProductTest extends TestCase
     {
         Storage::fake('public');
 
-        $seller = User::factory()->create();
+        $seller = User::factory()->create([
+            'role' => 'seller',
+        ]);
+
         $category = $this->createCategory();
 
         $kilogram = $this->createUnit('Kilogram', 'kg');
@@ -102,7 +105,10 @@ class ProductTest extends TestCase
 
     public function test_negative_price_and_stock_are_rejected(): void
     {
-        $seller = User::factory()->create();
+        $seller = User::factory()->create([
+            'role' => 'seller',
+        ]);
+
         $category = $this->createCategory();
         $unit = $this->createUnit('Kilogram', 'kg');
 
@@ -138,7 +144,10 @@ class ProductTest extends TestCase
     {
         Storage::fake('public');
 
-        $seller = User::factory()->create();
+        $seller = User::factory()->create([
+            'role' => 'seller',
+        ]);
+
         $category = $this->createCategory();
         $unit = $this->createUnit('Kilogram', 'kg');
 
@@ -174,8 +183,13 @@ class ProductTest extends TestCase
 
     public function test_seller_cannot_update_another_sellers_product(): void
     {
-        $owner = User::factory()->create();
-        $otherSeller = User::factory()->create();
+        $owner = User::factory()->create([
+            'role' => 'seller',
+        ]);
+
+        $otherSeller = User::factory()->create([
+            'role' => 'seller',
+        ]);
 
         $category = $this->createCategory();
         $unit = $this->createUnit('Kilogram', 'kg');
@@ -228,8 +242,10 @@ class ProductTest extends TestCase
         ]);
     }
 
-    private function createUnit(string $name, string $symbol): Unit
-    {
+    private function createUnit(
+        string $name,
+        string $symbol
+    ): Unit {
         return Unit::create([
             'name' => $name,
             'symbol' => $symbol,

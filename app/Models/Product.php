@@ -61,4 +61,9 @@ class Product extends Model
     {
         return $this->hasMany(Cart::class);
     }
+
+    public function batches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class);
+    }
 }
