@@ -18,6 +18,9 @@
         ?? 0;
 
     $displayStock = $selectedVariant?->stock ?? 0;
+
+    $displayImage = $selectedVariant?->image
+        ?: $product->image;
 @endphp
 
 <div class="max-w-5xl mx-auto py-8 px-4">
@@ -29,17 +32,21 @@
     </a>
 
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-        {{-- Ảnh sản phẩm --}}
+        {{-- Ảnh sản phẩm hoặc phân loại --}}
         <div class="bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center min-h-[320px] border border-gray-100">
-            @if ($product->image)
-                <img
-                    src="{{ asset('storage/' . $product->image) }}"
-                    alt="{{ $product->name }}"
-                    class="w-full h-full object-cover"
-                >
-            @else
-                <span class="text-8xl">🥑</span>
-            @endif
+            <img
+                id="product-main-image"
+                src="{{ $displayImage ? asset('storage/' . $displayImage) : '' }}"
+                alt="{{ $product->name }}"
+                class="w-full h-full object-cover {{ $displayImage ? '' : 'hidden' }}"
+            >
+
+            <span
+                id="product-image-placeholder"
+                class="text-8xl {{ $displayImage ? 'hidden' : '' }}"
+            >
+                🥑
+            </span>
         </div>
 
         {{-- Thông tin sản phẩm --}}
@@ -136,6 +143,11 @@
                                     value="{{ $variant->id }}"
                                     data-price="{{ (float) $variant->price }}"
                                     data-stock="{{ $variant->stock }}"
+                                    data-image="{{ $variant->image
+                                        ? asset('storage/' . $variant->image)
+                                        : ($product->image
+                                            ? asset('storage/' . $product->image)
+                                            : '') }}"
                                     @selected(
                                         (int) $selectedVariantId ===
                                         $variant->id
@@ -144,6 +156,7 @@
                                 >
                                     {{ $variant->display_name }}
                                     — {{ number_format($variant->price, 0, ',', '.') }} đ
+
                                     @if ($variant->stock <= 0)
                                         (Hết hàng)
                                     @else
@@ -213,20 +226,22 @@
 
             {{-- Yêu thích --}}
             @auth
-                <form
-                    action="{{ route('wishlist.toggle', $product) }}"
-                    method="POST"
-                    class="mt-3"
-                >
-                    @csrf
-
-                    <button
-                        type="submit"
-                        class="w-full border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold py-3 px-6 rounded-xl text-sm transition"
+                @if (auth()->user()->role === 'customer')
+                    <form
+                        action="{{ route('wishlist.toggle', $product) }}"
+                        method="POST"
+                        class="mt-3"
                     >
-                        ❤️ Thêm hoặc xóa khỏi yêu thích
-                    </button>
-                </form>
+                        @csrf
+
+                        <button
+                            type="submit"
+                            class="w-full border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold py-3 px-6 rounded-xl text-sm transition"
+                        >
+                            ❤️ Thêm hoặc xóa khỏi yêu thích
+                        </button>
+                    </form>
+                @endif
             @endauth
         </div>
     </div>
@@ -313,7 +328,7 @@
                     </button>
 
                     <p class="text-xs text-gray-500">
-                        Đánh giá sẽ được xử lý theo chính sách của hệ thống.
+                        Đánh giá của bạn sẽ được đăng công khai sau khi gửi.
                     </p>
                 </form>
             @else
@@ -402,6 +417,14 @@
     const quantityInput = document.getElementById('quantity');
     const addButton = document.getElementById('add-to-cart-button');
 
+    const productImage = document.getElementById(
+        'product-main-image'
+    );
+
+    const productImagePlaceholder = document.getElementById(
+        'product-image-placeholder'
+    );
+
     function formatCurrency(value) {
         return new Intl.NumberFormat('vi-VN').format(value) + ' đ';
     }
@@ -426,6 +449,7 @@
 
         const price = Number(option.dataset.price || 0);
         const stock = Number(option.dataset.stock || 0);
+        const imageUrl = option.dataset.image || '';
 
         priceElement.textContent = formatCurrency(price);
         stockElement.textContent = stock;
@@ -433,6 +457,16 @@
 
         if (Number(quantityInput.value) > stock) {
             quantityInput.value = Math.max(1, stock);
+        }
+
+        if (imageUrl) {
+            productImage.src = imageUrl;
+            productImage.classList.remove('hidden');
+            productImagePlaceholder.classList.add('hidden');
+        } else {
+            productImage.removeAttribute('src');
+            productImage.classList.add('hidden');
+            productImagePlaceholder.classList.remove('hidden');
         }
 
         addButton.disabled = stock <= 0;

@@ -6,6 +6,7 @@
             ->map(fn ($variant) => [
                 'id' => $variant->id,
                 'name' => $variant->name ?: $variant->display_name,
+                'image' => $variant->image,
                 'unit_id' => $variant->unit_id,
                 'sku' => $variant->sku,
                 'quantity' => $variant->quantity,
@@ -19,6 +20,7 @@
     if (empty($variantRows)) {
         $variantRows = [[
             'name' => '',
+            'image' => null,
             'unit_id' => '',
             'sku' => '',
             'quantity' => '',
@@ -102,7 +104,7 @@
 </div>
 
 <div class="form-group">
-    <label for="image">Ảnh sản phẩm</label>
+    <label for="image">Ảnh chung của sản phẩm</label>
 
     <input
         id="image"
@@ -112,6 +114,7 @@
     >
 
     <small>
+        Dùng khi phân loại không có ảnh riêng.
         Định dạng JPG, JPEG, PNG hoặc WEBP; tối đa 2 MB.
     </small>
 
@@ -155,8 +158,7 @@
         <h2>Phân loại sản phẩm</h2>
 
         <p>
-            Ví dụ: Hũ 300g, Hộp 4 bánh, Chai 500ml,
-            Trái loại 1 hoặc Combo quà biếu.
+            Mỗi phân loại có thể có ảnh, giá và tồn kho riêng.
         </p>
     </div>
 
@@ -170,6 +172,7 @@
         <thead>
             <tr>
                 <th>Tên phân loại *</th>
+                <th>Ảnh phân loại</th>
                 <th>SKU *</th>
                 <th>Đơn vị</th>
                 <th>Quy cách</th>
@@ -182,6 +185,25 @@
 
         <tbody id="variant-list">
             @foreach ($variantRows as $index => $variant)
+                @php
+                    $existingVariant = null;
+
+                    if (
+                        isset($product) &&
+                        !empty($variant['id'])
+                    ) {
+                        $existingVariant = $product->variants
+                            ->firstWhere(
+                                'id',
+                                (int) $variant['id']
+                            );
+                    }
+
+                    $existingVariantImage =
+                        $existingVariant?->image
+                        ?? ($variant['image'] ?? null);
+                @endphp
+
                 <tr class="variant-row">
                     <td>
                         @if (!empty($variant['id']))
@@ -201,6 +223,46 @@
                         >
 
                         @error("variants.$index.name")
+                            <span class="error">{{ $message }}</span>
+                        @enderror
+                    </td>
+
+                    <td style="min-width: 190px;">
+                        <input
+                            type="file"
+                            name="variants[{{ $index }}][image]"
+                            accept=".jpg,.jpeg,.png,.webp"
+                        >
+
+                        @if ($existingVariantImage)
+                            <div style="margin-top: 8px;">
+                                <img
+                                    src="{{ asset('storage/' . $existingVariantImage) }}"
+                                    alt="{{ $variant['name'] ?? 'Ảnh phân loại' }}"
+                                    style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="variants[{{ $index }}][remove_image]"
+                                    value="0"
+                                >
+
+                                <label
+                                    style="display: block; margin-top: 6px; font-size: 12px;"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        name="variants[{{ $index }}][remove_image]"
+                                        value="1"
+                                        style="width: auto;"
+                                    >
+                                    Xóa ảnh hiện tại
+                                </label>
+                            </div>
+                        @endif
+
+                        @error("variants.$index.image")
                             <span class="error">{{ $message }}</span>
                         @enderror
                     </td>
@@ -229,7 +291,8 @@
                                 <option
                                     value="{{ $unit->id }}"
                                     @selected(
-                                        ($variant['unit_id'] ?? '') == $unit->id
+                                        ($variant['unit_id'] ?? '')
+                                        == $unit->id
                                     )
                                 >
                                     {{ $unit->name }}
@@ -342,6 +405,14 @@
             >
         </td>
 
+        <td style="min-width: 190px;">
+            <input
+                type="file"
+                name="variants[__INDEX__][image]"
+                accept=".jpg,.jpeg,.png,.webp"
+            >
+        </td>
+
         <td>
             <input
                 type="text"
@@ -425,39 +496,45 @@
 </template>
 
 @push('scripts')
-    <script>
-        const variantList = document.getElementById('variant-list');
-        const variantTemplate = document.getElementById('variant-template');
-        const addVariantButton = document.getElementById('add-variant');
+<script>
+    const variantList = document.getElementById('variant-list');
+    const variantTemplate = document.getElementById('variant-template');
+    const addVariantButton = document.getElementById('add-variant');
 
-        let nextVariantIndex = {{ count($variantRows) }};
+    let nextVariantIndex = {{ count($variantRows) }};
 
-        addVariantButton.addEventListener('click', function () {
-            const html = variantTemplate.innerHTML.replaceAll(
-                '__INDEX__',
-                nextVariantIndex
+    addVariantButton.addEventListener('click', function () {
+        const html = variantTemplate.innerHTML.replaceAll(
+            '__INDEX__',
+            nextVariantIndex
+        );
+
+        variantList.insertAdjacentHTML('beforeend', html);
+        nextVariantIndex++;
+    });
+
+    variantList.addEventListener('click', function (event) {
+        if (
+            !event.target.classList.contains(
+                'remove-variant'
+            )
+        ) {
+            return;
+        }
+
+        const rows = variantList.querySelectorAll(
+            '.variant-row'
+        );
+
+        if (rows.length <= 1) {
+            alert(
+                'Sản phẩm phải có ít nhất một phân loại.'
             );
 
-            variantList.insertAdjacentHTML('beforeend', html);
-            nextVariantIndex++;
-        });
+            return;
+        }
 
-        variantList.addEventListener('click', function (event) {
-            if (!event.target.classList.contains('remove-variant')) {
-                return;
-            }
-
-            const rows = variantList.querySelectorAll('.variant-row');
-
-            if (rows.length <= 1) {
-                alert(
-                    'Sản phẩm phải có ít nhất một phân loại.'
-                );
-
-                return;
-            }
-
-            event.target.closest('.variant-row').remove();
-        });
-    </script>
+        event.target.closest('.variant-row').remove();
+    });
+</script>
 @endpush

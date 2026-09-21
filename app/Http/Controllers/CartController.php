@@ -94,7 +94,8 @@ class CartController extends Controller
             'sku' => $variant->sku,
             'quantity' => $newQuantity,
             'price' => (float) $variant->price,
-            'image' => $product->image ?? '',
+            'image' => $variant->image
+                ?: ($product->image ?? ''),
         ];
 
         session()->put('cart', $cart);

@@ -71,6 +71,18 @@ class UpdateProductRequest extends FormRequest
                 'distinct',
             ],
 
+            'variants.*.image' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+
+            'variants.*.remove_image' => [
+                'nullable',
+                'boolean',
+            ],
+
             'variants.*.unit_id' => [
                 'nullable',
                 Rule::exists('units', 'id')
@@ -113,7 +125,10 @@ class UpdateProductRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                foreach ($this->input('variants', []) as $index => $variant) {
+                foreach (
+                    $this->input('variants', [])
+                    as $index => $variant
+                ) {
                     if (empty($variant['sku'])) {
                         continue;
                     }
@@ -122,7 +137,11 @@ class UpdateProductRequest extends FormRequest
                         ->where('sku', $variant['sku']);
 
                     if (!empty($variant['id'])) {
-                        $query->where('id', '!=', $variant['id']);
+                        $query->where(
+                            'id',
+                            '!=',
+                            $variant['id']
+                        );
                     }
 
                     if ($query->exists()) {
@@ -157,6 +176,12 @@ class UpdateProductRequest extends FormRequest
             'variants.*.name.required' => 'Vui lòng nhập tên phân loại.',
             'variants.*.name.max' => 'Tên phân loại không được vượt quá 255 ký tự.',
             'variants.*.name.distinct' => 'Tên phân loại không được trùng nhau.',
+
+            'variants.*.image.image' => 'Ảnh phân loại phải là hình ảnh.',
+            'variants.*.image.mimes' => 'Ảnh phân loại phải có định dạng JPG, JPEG, PNG hoặc WEBP.',
+            'variants.*.image.max' => 'Ảnh phân loại không được vượt quá 2 MB.',
+
+            'variants.*.remove_image.boolean' => 'Tùy chọn xóa ảnh phân loại không hợp lệ.',
 
             'variants.*.unit_id.exists' => 'Đơn vị không hợp lệ.',
 

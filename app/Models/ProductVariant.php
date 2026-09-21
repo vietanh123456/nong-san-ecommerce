@@ -10,6 +10,7 @@ class ProductVariant extends Model
     protected $fillable = [
         'product_id',
         'name',
+        'image',
         'unit_id',
         'sku',
         'quantity',
@@ -46,11 +47,21 @@ class ProductVariant extends Model
 
         if ($this->quantity !== null && $this->unit) {
             $quantity = rtrim(
-                rtrim(number_format((float) $this->quantity, 2, '.', ''), '0'),
+                rtrim(
+                    number_format(
+                        (float) $this->quantity,
+                        2,
+                        '.',
+                        ''
+                    ),
+                    '0'
+                ),
                 '.'
             );
 
-            return trim($quantity . ' ' . $this->unit->symbol);
+            return trim(
+                $quantity . ' ' . $this->unit->symbol
+            );
         }
 
         return $this->sku;
