@@ -42,6 +42,12 @@
                         <a href="/profile" class="font-semibold hover:underline flex items-center gap-1">
                             👤 {{ Auth::user()->name }}
                         </a>
+                        @if(Auth::user()->isSeller())
+                            <a href="{{ route('seller.products.index') }}" class="font-semibold text-emerald-200 hover:underline">Kênh bán</a>
+                        @endif
+                        @if(Auth::user()->isAdmin())
+                            <a href="{{ route('admin.dashboard') }}" class="font-semibold text-amber-200 hover:underline">Quản trị</a>
+                        @endif
                         <form action="{{ route('logout') }}" method="POST" class="inline">
                             @csrf
                             <button type="submit" class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">

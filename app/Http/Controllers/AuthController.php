@@ -45,17 +45,19 @@ public function showRegister()
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
+            'role' => 'nullable|in:customer,seller',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'role' => 'customer',
+            'seller_request_status' => null,
             'password' => Hash::make($request->password),
         ]);
 
         Auth::login($user);
-
-        return redirect()->route('login')->with('success', 'Đăng ký tài khoản thành công! Vui lòng đăng nhập.');
+        return redirect()->intended('/')->with('success', 'Đăng ký tài khoản thành công!');
     }
 
     // Hiển thị Trang cá nhân (Profile)

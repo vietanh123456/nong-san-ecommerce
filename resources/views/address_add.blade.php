@@ -9,12 +9,16 @@
             @csrf
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-2">Số điện thoại</label>
+                <input type="text" name="recipient_name" value="{{ Auth::user()->name ?? '' }}" required placeholder="Tên người nhận" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-600">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-2">Số điện thoại</label>
                 <input type="text" name="phone" value="{{ Auth::user()->phone ?? '' }}" required placeholder="0987654321" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-600">
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-2">Địa chỉ chi tiết</label>
-                <textarea name="address" rows="3" required placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-600">{{ Auth::user()->address ?? '' }}</textarea>
+                <textarea name="address_detail" rows="3" required placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-600"></textarea>
             </div>
 
             <div class="flex gap-3 pt-2">

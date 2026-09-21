@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
@@ -45,5 +46,76 @@ class ProductController extends Controller
     {
         $product = Product::findOrFail($id);
         return view('products.show', compact('product'));
+    }
+
+    public function sellerIndex()
+    {
+        $products = Product::where('seller_id', Auth::id())->latest()->get();
+        return view('seller.products.index', compact('products'));
+    }
+
+    public function sellerCreate()
+    {
+        $categories = Category::orderBy('id')->get();
+        return view('seller.products.form', compact('categories'));
+    }
+
+    public function sellerStore(Request $request)
+    {
+        $data = $this->validatedData($request);
+        $data['seller_id'] = Auth::id();
+        Product::create($data);
+
+        return redirect()->route('seller.products.index')->with('success', 'Đã thêm sản phẩm.');
+    }
+
+    public function sellerEdit(Product $product)
+    {
+        $this->ensureOwner($product);
+        $categories = Category::orderBy('id')->get();
+        return view('seller.products.form', compact('product', 'categories'));
+    }
+
+    public function sellerUpdate(Request $request, Product $product)
+    {
+        $this->ensureOwner($product);
+        $product->update($this->validatedData($request));
+
+        return redirect()->route('seller.products.index')->with('success', 'Đã cập nhật sản phẩm.');
+    }
+
+    public function sellerDestroy(Product $product)
+    {
+        $this->ensureOwner($product);
+        $product->delete();
+
+        return back()->with('success', 'Đã xóa sản phẩm.');
+    }
+
+    public function sellerToggle(Product $product)
+    {
+        $this->ensureOwner($product);
+        $product->update(['status' => ! $product->status]);
+
+        return back()->with('success', 'Đã cập nhật trạng thái sản phẩm.');
+    }
+
+    private function validatedData(Request $request): array
+    {
+        return $request->validate([
+            'category_id' => ['required', 'exists:categories,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'stock' => ['required', 'integer', 'min:0'],
+            'origin' => ['nullable', 'string', 'max:255'],
+            'image' => ['nullable', 'url', 'max:2048'],
+            'status' => ['nullable', 'boolean'],
+        ]);
+    }
+
+    private function ensureOwner(Product $product): void
+    {
+        abort_unless($product->seller_id === Auth::id(), 403);
     }
 }

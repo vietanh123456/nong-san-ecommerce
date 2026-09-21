@@ -5,6 +5,9 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\AdminController;
 
 
 /*
@@ -34,6 +37,8 @@ Route::get('/products/{id}', function ($id) {
     $product = Product::findOrFail($id);
     return view('products.show', compact('product'));
 })->name('products.show');
+
+Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 
 /*
 |--------------------------------------------------------------------------
@@ -119,44 +124,32 @@ Route::get('/home', function () {
 | THÔNG TIN TÀI KHOẢN (PROFILE)
 |--------------------------------------------------------------------------
 */
-Route::get('/profile', function () {
-    return view('profile');
-})->name('profile')->middleware('auth');
-// Route hiển thị trang thêm địa chỉ
-Route::get('/address/add', function () {
-    return view('address_add');
-})->middleware('auth')->name('address.add');
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
+    Route::get('/address/add', fn () => view('address_add'))->name('address.add');
+    Route::put('/profile', [ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::post('/profile/seller-request', [ProfileController::class, 'requestSellerRole'])->name('profile.seller-request');
+    Route::post('/address', [ProfileController::class, 'storeAddress'])->name('address.store');
+    Route::put('/address/{address}', [ProfileController::class, 'updateAddress'])->name('address.update');
+    Route::delete('/address/{address}', [ProfileController::class, 'deleteAddress'])->name('address.destroy');
+    Route::patch('/address/{address}/default', [ProfileController::class, 'setDefaultAddress'])->name('address.default');
+});
 
-// Route xử lý lưu địa chỉ
-Route::post('/address/add', function (\Illuminate\Http\Request $request) {
-    $request->validate([
-        'phone' => 'required',
-        'address' => 'required',
-    ]);
+Route::middleware(['auth', 'seller'])->prefix('seller')->name('seller.')->group(function () {
+    Route::get('/', [ProductController::class, 'sellerIndex'])->name('dashboard');
+    Route::get('/products', [ProductController::class, 'sellerIndex'])->name('products.index');
+    Route::get('/products/create', [ProductController::class, 'sellerCreate'])->name('products.create');
+    Route::post('/products', [ProductController::class, 'sellerStore'])->name('products.store');
+    Route::get('/products/{product}/edit', [ProductController::class, 'sellerEdit'])->name('products.edit');
+    Route::put('/products/{product}', [ProductController::class, 'sellerUpdate'])->name('products.update');
+    Route::delete('/products/{product}', [ProductController::class, 'sellerDestroy'])->name('products.destroy');
+    Route::patch('/products/{product}/toggle', [ProductController::class, 'sellerToggle'])->name('products.toggle');
+});
 
-    $user = Auth::user();
-    $user->phone = $request->phone;
-    $user->address = $request->address;
-    $user->save();
-
-    return redirect('/profile')->with('success', 'Cập nhật địa chỉ thành công!');
-})->middleware('auth')->name('address.store');
-// Route hiển thị trang thêm địa chỉ
-Route::get('/address/add', function () {
-    return view('address_add');
-})->middleware('auth')->name('address.add');
-
-// Route xử lý lưu địa chỉ
-Route::post('/address/add', function (\Illuminate\Http\Request $request) {
-    $request->validate([
-        'phone' => 'required',
-        'address' => 'required',
-    ]);
-
-    $user = Auth::user();
-    $user->phone = $request->phone;
-    $user->address = $request->address;
-    $user->save();
-
-    return redirect('/profile')->with('success', 'Cập nhật địa chỉ thành công!');
-})->middleware('auth')->name('address.store');
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::patch('/sellers/{user}/approve', [AdminController::class, 'approveSeller'])->name('sellers.approve');
+    Route::patch('/sellers/{user}/reject', [AdminController::class, 'rejectSeller'])->name('sellers.reject');
+    Route::patch('/sellers/{user}/revoke', [AdminController::class, 'revokeSeller'])->name('sellers.revoke');
+});

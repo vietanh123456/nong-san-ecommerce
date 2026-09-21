@@ -7,11 +7,22 @@ use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        User::updateOrCreate(
+            ['email' => 'admin@nongsanviet.test'],
+            [
+                'name' => 'Quản trị viên',
+                'role' => 'admin',
+                'password' => Hash::make('Admin@12345'),
+            ]
+        );
+
         $catColumn = 'name';
         if (!Schema::hasColumn('categories', 'name')) {
             $columns = Schema::getColumnListing('categories');

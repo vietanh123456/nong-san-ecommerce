@@ -33,20 +33,22 @@
                     🛒 Giỏ hàng <span class="bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">{{ count(session('cart', [])) }}</span>
                 </a>
 
-                <!-- AUTH (ĐĂNG NHẬP / ĐĂNG XUẤT) -->
-                @auth
-                    <span class="text-sm font-medium text-emerald-100">👤 {{ Auth::user()->name }}</span>
-                    <form action="{{ route('logout') }}" method="POST" class="inline">
-                        @csrf
-                        <button type="submit" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
-                            Đăng xuất
-                        </button>
-                    </form>
-                @else
-                    <a href="{{ route('login') }}" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
-                        Đăng nhập
-                    </a>
-                @endauth
+            <!-- AUTH (ĐĂNG NHẬP / ĐĂNG XUẤT) -->
+            @auth
+                <a href="{{ route('profile') }}" class="text-sm font-medium text-emerald-100 hover:text-white hover:underline transition flex items-center gap-1">
+                    👤 {{ Auth::user()->name }}
+                </a>
+                <form action="{{ route('logout') }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                        Đăng xuất
+                    </button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                    Đăng nhập
+                </a>
+            @endauth
             </div>
         </div>
     </header>
@@ -58,6 +60,35 @@
                 {{ session('success') }}
             </div>
         @endif
+
+        @auth
+            @if(Auth::user()->isAdmin() || Auth::user()->isSeller())
+            <section class="mb-8 rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Khu vực tài khoản</p>
+                        <h2 class="mt-1 text-xl font-bold text-gray-800">Xin chào, {{ Auth::user()->name }}</h2>
+                        <p class="mt-1 text-sm text-gray-500">
+                            @if(Auth::user()->isAdmin())
+                                Bạn đang đăng nhập với quyền quản trị viên.
+                            @elseif(Auth::user()->isSeller())
+                                Quản lý sản phẩm và hoạt động bán hàng của bạn.
+                            @endif
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        @if(Auth::user()->isAdmin())
+                            <a href="{{ route('admin.dashboard') }}" class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Quản trị seller</a>
+                        @elseif(Auth::user()->isSeller())
+                            <a href="{{ route('seller.products.index') }}" class="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Kênh bán hàng</a>
+                            <a href="{{ route('seller.products.create') }}" class="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Thêm sản phẩm</a>
+                        @endif
+                    </div>
+                </div>
+            </section>
+            @endif
+        @endauth
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             @forelse($products as $product)
@@ -80,13 +111,16 @@
                         </div>
                     </div>
 
-                    <!-- THAO TÁC (FORM MUA HÀNG & THẢ TIM) -->
+                    <!-- THAO TÁC XEM CHI TIẾT & YÊU THÍCH -->
                     <div class="p-4 pt-0 flex items-center gap-2">
-                        <!-- FORM THÊM VÀO GIỎ -->
-                        <form action="{{ route('cart.add', $product->id) }}" method="POST" class="flex-1">
+                        <a href="{{ route('products.show', $product->id) }}" class="flex-1 text-center bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
+                            Xem thông tin
+                        </a>
+
+                        <form action="{{ route('cart.add', $product->id) }}" method="POST">
                             @csrf
-                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
-                                Thêm vào giỏ
+                            <button type="submit" class="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100" title="Thêm vào giỏ hàng" aria-label="Thêm {{ $product->name }} vào giỏ hàng">
+                                🛒
                             </button>
                         </form>
 
