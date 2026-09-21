@@ -22,6 +22,10 @@ class CartVariantTest extends TestCase
             stock: 10
         );
 
+        $variant->update([
+            'image' => 'product-variants/hu-300g.jpg',
+        ]);
+
         $response = $this->post(
             route('cart.add', $product),
             [
@@ -51,6 +55,11 @@ class CartVariantTest extends TestCase
             "cart.{$variant->id}.price",
             120000.0
         );
+
+        $response->assertSessionHas(
+            "cart.{$variant->id}.image",
+            'product-variants/hu-300g.jpg'
+        );
     }
 
     public function test_different_variants_are_separate_cart_items(): void
@@ -70,6 +79,7 @@ class CartVariantTest extends TestCase
         $smallVariant = ProductVariant::create([
             'product_id' => $product->id,
             'name' => 'Hộp 4 bánh',
+            'image' => null,
             'unit_id' => null,
             'sku' => 'BANHPIA-HOP4',
             'quantity' => null,
@@ -81,6 +91,7 @@ class CartVariantTest extends TestCase
         $largeVariant = ProductVariant::create([
             'product_id' => $product->id,
             'name' => 'Hộp 8 bánh',
+            'image' => null,
             'unit_id' => null,
             'sku' => 'BANHPIA-HOP8',
             'quantity' => null,
@@ -107,10 +118,12 @@ class CartVariantTest extends TestCase
         $cart = session('cart');
 
         $this->assertCount(2, $cart);
+
         $this->assertSame(
             1,
             $cart[(string) $smallVariant->id]['quantity']
         );
+
         $this->assertSame(
             2,
             $cart[(string) $largeVariant->id]['quantity']
@@ -234,6 +247,7 @@ class CartVariantTest extends TestCase
         $variant = ProductVariant::create([
             'product_id' => $product->id,
             'name' => $name,
+            'image' => null,
             'unit_id' => null,
             'sku' => $sku,
             'quantity' => null,

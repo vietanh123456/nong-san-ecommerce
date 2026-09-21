@@ -32,6 +32,32 @@
             margin-top: 30px;
         }
 
+        .variant-image {
+            width: 70px;
+            height: 70px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #e5e7eb;
+            border: 1px solid #e5e7eb;
+        }
+
+        .variant-image-fallback {
+            opacity: 0.65;
+        }
+
+        .variant-no-image {
+            width: 70px;
+            height: 70px;
+            border-radius: 8px;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 11px;
+            text-align: center;
+        }
+
         .review-summary {
             display: flex;
             justify-content: space-between;
@@ -104,14 +130,18 @@
 
             <div class="detail-list">
                 <div class="detail-label">Danh mục</div>
-                <div>{{ $product->category->name ?? 'Chưa có' }}</div>
+                <div>
+                    {{ $product->category->name ?? 'Chưa có' }}
+                </div>
 
                 <div class="detail-label">Xuất xứ</div>
-                <div>{{ $product->origin ?: 'Chưa cập nhật' }}</div>
+                <div>
+                    {{ $product->origin ?: 'Chưa cập nhật' }}
+                </div>
 
                 <div class="detail-label">Giá thấp nhất</div>
                 <div>
-                    {{ number_format($product->price, 0, ',', '.') }}đ
+                    {{ number_format($product->price, 0, ',', '.') }} đ
                 </div>
 
                 <div class="detail-label">Tổng tồn kho</div>
@@ -120,29 +150,37 @@
                 <div class="detail-label">Trạng thái</div>
                 <div>
                     @if ($product->status)
-                        <span class="badge badge-active">Đang bán</span>
+                        <span class="badge badge-active">
+                            Đang bán
+                        </span>
                     @else
-                        <span class="badge badge-inactive">Tạm ẩn</span>
+                        <span class="badge badge-inactive">
+                            Tạm ẩn
+                        </span>
                     @endif
                 </div>
 
                 <div class="detail-label">Mô tả</div>
                 <div>
-                    {!! nl2br(e($product->description ?: 'Chưa có mô tả')) !!}
+                    {!! nl2br(e(
+                        $product->description
+                        ?: 'Chưa có mô tả'
+                    )) !!}
                 </div>
             </div>
         </div>
 
         <section class="section">
-            <h2>Đơn vị, giá và tồn kho</h2>
+            <h2>Phân loại, giá và tồn kho</h2>
 
             <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
+                            <th>Ảnh</th>
+                            <th>Tên phân loại</th>
                             <th>SKU</th>
-                            <th>Đơn vị</th>
-                            <th>Khối lượng</th>
+                            <th>Đơn vị / Quy cách</th>
                             <th>Giá</th>
                             <th>Tồn kho</th>
                             <th>Trạng thái</th>
@@ -152,20 +190,68 @@
                     <tbody>
                         @forelse ($product->variants as $variant)
                             <tr>
-                                <td>{{ $variant->sku }}</td>
-
                                 <td>
-                                    {{ $variant->unit->name ?? 'Không xác định' }}
-                                    ({{ $variant->unit->symbol ?? '-' }})
+                                    @if ($variant->image)
+                                        <img
+                                            src="{{ asset('storage/' . $variant->image) }}"
+                                            alt="{{ $variant->display_name }}"
+                                            class="variant-image"
+                                        >
+                                    @elseif ($product->image)
+                                        <img
+                                            src="{{ asset('storage/' . $product->image) }}"
+                                            alt="{{ $variant->display_name }}"
+                                            class="variant-image variant-image-fallback"
+                                            title="Đang dùng ảnh chung của sản phẩm"
+                                        >
+                                    @else
+                                        <div class="variant-no-image">
+                                            Không có ảnh
+                                        </div>
+                                    @endif
                                 </td>
 
                                 <td>
-                                    {{ number_format(
-                                        $variant->quantity,
-                                        2,
-                                        ',',
-                                        '.'
-                                    ) }}
+                                    <strong>
+                                        {{ $variant->display_name }}
+                                    </strong>
+
+                                    @if (!$variant->image && $product->image)
+                                        <div>
+                                            <small>
+                                                Dùng ảnh chung
+                                            </small>
+                                        </div>
+                                    @endif
+                                </td>
+
+                                <td>{{ $variant->sku }}</td>
+
+                                <td>
+                                    @if (
+                                        $variant->quantity !== null &&
+                                        $variant->unit
+                                    )
+                                        {{ rtrim(
+                                            rtrim(
+                                                number_format(
+                                                    (float) $variant->quantity,
+                                                    2,
+                                                    ',',
+                                                    ''
+                                                ),
+                                                '0'
+                                            ),
+                                            ','
+                                        ) }}
+
+                                        {{ $variant->unit->symbol }}
+                                    @elseif ($variant->unit)
+                                        {{ $variant->unit->name }}
+                                        ({{ $variant->unit->symbol }})
+                                    @else
+                                        <span>Không áp dụng</span>
+                                    @endif
                                 </td>
 
                                 <td>
@@ -174,7 +260,7 @@
                                         0,
                                         ',',
                                         '.'
-                                    ) }}đ
+                                    ) }} đ
                                 </td>
 
                                 <td>{{ $variant->stock }}</td>
@@ -193,8 +279,8 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6">
-                                    Sản phẩm chưa có lựa chọn bán.
+                                <td colspan="7">
+                                    Sản phẩm chưa có phân loại bán.
                                 </td>
                             </tr>
                         @endforelse
@@ -207,7 +293,10 @@
             <div class="review-summary">
                 <div>
                     <h2>Đánh giá và bình luận</h2>
-                    <p>Các đánh giá công khai của khách hàng.</p>
+
+                    <p>
+                        Các đánh giá công khai của khách hàng.
+                    </p>
                 </div>
 
                 <span class="badge badge-active">
@@ -242,7 +331,9 @@
                                         @endfor
                                     </div>
 
-                                    <small>{{ $review->rating }}/5</small>
+                                    <small>
+                                        {{ $review->rating }}/5
+                                    </small>
                                 </td>
 
                                 <td>
