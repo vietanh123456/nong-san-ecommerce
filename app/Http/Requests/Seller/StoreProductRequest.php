@@ -63,6 +63,13 @@ class StoreProductRequest extends FormRequest
                 'distinct',
             ],
 
+            'variants.*.image' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+
             'variants.*.unit_id' => [
                 'nullable',
                 Rule::exists('units', 'id')
@@ -121,6 +128,10 @@ class StoreProductRequest extends FormRequest
             'variants.*.name.required' => 'Vui lòng nhập tên phân loại.',
             'variants.*.name.max' => 'Tên phân loại không được vượt quá 255 ký tự.',
             'variants.*.name.distinct' => 'Tên phân loại không được trùng nhau.',
+
+            'variants.*.image.image' => 'Ảnh phân loại phải là hình ảnh.',
+            'variants.*.image.mimes' => 'Ảnh phân loại phải có định dạng JPG, JPEG, PNG hoặc WEBP.',
+            'variants.*.image.max' => 'Ảnh phân loại không được vượt quá 2 MB.',
 
             'variants.*.unit_id.exists' => 'Đơn vị không hợp lệ.',
 
