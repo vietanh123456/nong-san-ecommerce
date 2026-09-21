@@ -20,6 +20,7 @@ class User extends Authenticatable
         'avatar',
         'password',
         'role',
+        'is_active',
     ];
 
     protected $hidden = [
@@ -32,6 +33,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -48,5 +50,10 @@ class User extends Authenticatable
     public function carts(): HasMany
     {
         return $this->hasMany(Cart::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'seller_id');
     }
 }

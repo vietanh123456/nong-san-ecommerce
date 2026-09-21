@@ -35,7 +35,28 @@
 
                 <!-- AUTH (ĐĂNG NHẬP / ĐĂNG XUẤT) -->
                 @auth
-                    <span class="text-sm font-medium text-emerald-100">👤 {{ Auth::user()->name }}</span>
+                    @if (Auth::user()->role === 'admin')
+                        <a
+                            href="{{ route('admin.dashboard') }}"
+                            class="bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-white"
+                        >
+                            🛡️ {{ Auth::user()->name }}
+                        </a>
+                    @elseif (Auth::user()->role === 'seller')
+                        <a
+                            href="{{ route('seller.dashboard') }}"
+                            class="bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-white"
+                        >
+                            🏪 Kênh người bán
+                        </a>
+                    @else
+                        <a
+                            href="{{ route('profile') }}"
+                            class="text-sm font-medium text-emerald-100 hover:text-white hover:underline"
+                        >
+                            👤 {{ Auth::user()->name }}
+                        </a>
+                    @endif
                     <form action="{{ route('logout') }}" method="POST" class="inline">
                         @csrf
                         <button type="submit" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition">

@@ -22,6 +22,15 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Quản trị viên',
+                'password' => 'password',
+                'role' => 'admin',
+            ]
+        );
+
         $this->call([
             CategorySeeder::class,
             UnitSeeder::class,

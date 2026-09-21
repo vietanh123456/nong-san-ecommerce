@@ -229,6 +229,10 @@
             <a href="{{ route('seller.products.create') }}">
                 Thêm sản phẩm
             </a>
+
+            <a href="{{ route('seller.batches.index') }}">
+                Lô hàng & QR
+            </a>
         </nav>
 
         <span>
