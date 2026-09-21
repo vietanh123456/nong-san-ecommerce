@@ -9,8 +9,6 @@ class StoreProductRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Tạm thời cho phép để phát triển CRUD.
-        // Sẽ thay bằng kiểm tra quyền Seller khi Người 1 hoàn thành Auth.
         return true;
     }
 
@@ -58,8 +56,15 @@ class StoreProductRequest extends FormRequest
                 'min:1',
             ],
 
-            'variants.*.unit_id' => [
+            'variants.*.name' => [
                 'required',
+                'string',
+                'max:255',
+                'distinct',
+            ],
+
+            'variants.*.unit_id' => [
+                'nullable',
                 Rule::exists('units', 'id')
                     ->where('status', true),
             ],
@@ -73,7 +78,7 @@ class StoreProductRequest extends FormRequest
             ],
 
             'variants.*.quantity' => [
-                'required',
+                'nullable',
                 'numeric',
                 'gt:0',
             ],
@@ -110,18 +115,21 @@ class StoreProductRequest extends FormRequest
             'image.mimes' => 'Ảnh phải có định dạng JPG, JPEG, PNG hoặc WEBP.',
             'image.max' => 'Dung lượng ảnh không được vượt quá 2 MB.',
 
-            'variants.required' => 'Sản phẩm phải có ít nhất một lựa chọn bán.',
-            'variants.min' => 'Sản phẩm phải có ít nhất một lựa chọn bán.',
+            'variants.required' => 'Sản phẩm phải có ít nhất một phân loại.',
+            'variants.min' => 'Sản phẩm phải có ít nhất một phân loại.',
 
-            'variants.*.unit_id.required' => 'Vui lòng chọn đơn vị.',
+            'variants.*.name.required' => 'Vui lòng nhập tên phân loại.',
+            'variants.*.name.max' => 'Tên phân loại không được vượt quá 255 ký tự.',
+            'variants.*.name.distinct' => 'Tên phân loại không được trùng nhau.',
+
             'variants.*.unit_id.exists' => 'Đơn vị không hợp lệ.',
 
             'variants.*.sku.required' => 'Vui lòng nhập mã SKU.',
             'variants.*.sku.distinct' => 'Mã SKU không được trùng nhau.',
             'variants.*.sku.unique' => 'Mã SKU đã tồn tại.',
 
-            'variants.*.quantity.required' => 'Vui lòng nhập khối lượng.',
-            'variants.*.quantity.gt' => 'Khối lượng phải lớn hơn 0.',
+            'variants.*.quantity.numeric' => 'Quy cách phải là một số.',
+            'variants.*.quantity.gt' => 'Quy cách phải lớn hơn 0.',
 
             'variants.*.price.required' => 'Vui lòng nhập giá.',
             'variants.*.price.min' => 'Giá không được là số âm.',

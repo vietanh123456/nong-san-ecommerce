@@ -19,7 +19,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function (Request $request) {
-    $query = Product::query();
+    $query = Product::query()
+        ->with('category')
+        ->where('status', true);
 
     if ($request->filled('search')) {
         $search = trim($request->input('search'));
@@ -40,7 +42,7 @@ Route::get('/', function (Request $request) {
 
 /*
 |--------------------------------------------------------------------------
-| Chuyển đường dẫn /home về trang chủ
+| Chuyển /home về trang chủ
 |--------------------------------------------------------------------------
 */
 
@@ -52,10 +54,15 @@ Route::redirect('/home', '/');
 |--------------------------------------------------------------------------
 */
 
-Route::get('/products', [CustomerProductController::class, 'index'])
-    ->name('products.index');
+Route::get(
+    '/products',
+    [CustomerProductController::class, 'index']
+)->name('products.index');
 
-Route::get('/products/{id}', [CustomerProductController::class, 'show'])
+Route::get(
+    '/products/{id}',
+    [CustomerProductController::class, 'show']
+)->whereNumber('id')
     ->name('products.show');
 
 /*
@@ -65,17 +72,25 @@ Route::get('/products/{id}', [CustomerProductController::class, 'show'])
 */
 
 Route::middleware('guest')->group(function (): void {
-    Route::get('/login', [AuthController::class, 'showLogin'])
-        ->name('login');
+    Route::get(
+        '/login',
+        [AuthController::class, 'showLogin']
+    )->name('login');
 
-    Route::post('/login', [AuthController::class, 'login'])
-        ->name('login.store');
+    Route::post(
+        '/login',
+        [AuthController::class, 'login']
+    )->name('login.store');
 
-    Route::get('/register', [AuthController::class, 'showRegister'])
-        ->name('register');
+    Route::get(
+        '/register',
+        [AuthController::class, 'showRegister']
+    )->name('register');
 
-    Route::post('/register', [AuthController::class, 'register'])
-        ->name('register.store');
+    Route::post(
+        '/register',
+        [AuthController::class, 'register']
+    )->name('register.store');
 });
 
 /*
@@ -84,16 +99,26 @@ Route::middleware('guest')->group(function (): void {
 |--------------------------------------------------------------------------
 */
 
-Route::get('/cart', [CartController::class, 'index'])
-    ->name('cart.index');
+Route::get(
+    '/cart',
+    [CartController::class, 'index']
+)->name('cart.index');
 
-Route::post('/cart/add/{product}', [CartController::class, 'add'])
-    ->name('cart.add');
+Route::post(
+    '/cart/add/{product}',
+    [CartController::class, 'add']
+)->name('cart.add');
 
-Route::patch('/cart/update/{product}', [CartController::class, 'update'])
+Route::patch(
+    '/cart/update/{variant}',
+    [CartController::class, 'update']
+)->whereNumber('variant')
     ->name('cart.update');
 
-Route::delete('/cart/remove/{product}', [CartController::class, 'remove'])
+Route::delete(
+    '/cart/remove/{variant}',
+    [CartController::class, 'remove']
+)->whereNumber('variant')
     ->name('cart.remove');
 
 /*
@@ -103,11 +128,15 @@ Route::delete('/cart/remove/{product}', [CartController::class, 'remove'])
 */
 
 Route::middleware('auth')->group(function (): void {
-    Route::post('/logout', [AuthController::class, 'logout'])
-        ->name('logout');
+    Route::post(
+        '/logout',
+        [AuthController::class, 'logout']
+    )->name('logout');
 
-    Route::get('/profile', [ProfileController::class, 'index'])
-        ->name('profile');
+    Route::get(
+        '/profile',
+        [ProfileController::class, 'index']
+    )->name('profile');
 
     Route::post(
         '/address/add',
@@ -119,8 +148,10 @@ Route::middleware('auth')->group(function (): void {
         [ProfileController::class, 'destroyAddress']
     )->name('address.destroy');
 
-    Route::get('/wishlist', [WishlistController::class, 'index'])
-        ->name('wishlist.index');
+    Route::get(
+        '/wishlist',
+        [WishlistController::class, 'index']
+    )->name('wishlist.index');
 
     Route::post(
         '/wishlist/toggle/{product}',

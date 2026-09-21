@@ -5,6 +5,7 @@
         $variantRows = $product->variants
             ->map(fn ($variant) => [
                 'id' => $variant->id,
+                'name' => $variant->name ?: $variant->display_name,
                 'unit_id' => $variant->unit_id,
                 'sku' => $variant->sku,
                 'quantity' => $variant->quantity,
@@ -17,9 +18,10 @@
 
     if (empty($variantRows)) {
         $variantRows = [[
+            'name' => '',
             'unit_id' => '',
             'sku' => '',
-            'quantity' => 1,
+            'quantity' => '',
             'price' => '',
             'stock' => 0,
             'status' => true,
@@ -109,9 +111,11 @@
         accept=".jpg,.jpeg,.png,.webp"
     >
 
-    <small>Định dạng JPG, JPEG, PNG hoặc WEBP; tối đa 2 MB.</small>
+    <small>
+        Định dạng JPG, JPEG, PNG hoặc WEBP; tối đa 2 MB.
+    </small>
 
-    @if (!empty($product?->image))
+    @if (isset($product) && $product->image)
         <div style="margin-top: 12px;">
             <img
                 src="{{ asset('storage/' . $product->image) }}"
@@ -148,12 +152,16 @@
 
 <div class="page-heading">
     <div>
-        <h2>Lựa chọn bán</h2>
-        <p>Nhập đơn vị, khối lượng, giá và tồn kho.</p>
+        <h2>Phân loại sản phẩm</h2>
+
+        <p>
+            Ví dụ: Hũ 300g, Hộp 4 bánh, Chai 500ml,
+            Trái loại 1 hoặc Combo quà biếu.
+        </p>
     </div>
 
     <button type="button" class="btn" id="add-variant">
-        Thêm lựa chọn
+        Thêm phân loại
     </button>
 </div>
 
@@ -161,11 +169,12 @@
     <table>
         <thead>
             <tr>
+                <th>Tên phân loại *</th>
+                <th>SKU *</th>
                 <th>Đơn vị</th>
-                <th>Khối lượng</th>
-                <th>SKU</th>
-                <th>Giá</th>
-                <th>Tồn kho</th>
+                <th>Quy cách</th>
+                <th>Giá *</th>
+                <th>Tồn kho *</th>
                 <th>Đang bán</th>
                 <th></th>
             </tr>
@@ -183,11 +192,38 @@
                             >
                         @endif
 
-                        <select
-                            name="variants[{{ $index }}][unit_id]"
+                        <input
+                            type="text"
+                            name="variants[{{ $index }}][name]"
+                            value="{{ $variant['name'] ?? '' }}"
+                            placeholder="Ví dụ: Hũ 300g"
                             required
                         >
-                            <option value="">-- Đơn vị --</option>
+
+                        @error("variants.$index.name")
+                            <span class="error">{{ $message }}</span>
+                        @enderror
+                    </td>
+
+                    <td>
+                        <input
+                            type="text"
+                            name="variants[{{ $index }}][sku]"
+                            value="{{ $variant['sku'] ?? '' }}"
+                            placeholder="VD: MATONG-HU300"
+                            required
+                        >
+
+                        @error("variants.$index.sku")
+                            <span class="error">{{ $message }}</span>
+                        @enderror
+                    </td>
+
+                    <td>
+                        <select name="variants[{{ $index }}][unit_id]">
+                            <option value="">
+                                -- Không bắt buộc --
+                            </option>
 
                             @foreach ($units as $unit)
                                 <option
@@ -211,27 +247,13 @@
                         <input
                             type="number"
                             name="variants[{{ $index }}][quantity]"
-                            value="{{ $variant['quantity'] ?? 1 }}"
+                            value="{{ $variant['quantity'] ?? '' }}"
                             min="0.01"
                             step="0.01"
-                            required
+                            placeholder="Tùy chọn"
                         >
 
                         @error("variants.$index.quantity")
-                            <span class="error">{{ $message }}</span>
-                        @enderror
-                    </td>
-
-                    <td>
-                        <input
-                            type="text"
-                            name="variants[{{ $index }}][sku]"
-                            value="{{ $variant['sku'] ?? '' }}"
-                            placeholder="CAM-1KG"
-                            required
-                        >
-
-                        @error("variants.$index.sku")
                             <span class="error">{{ $message }}</span>
                         @enderror
                     </td>
@@ -312,12 +334,33 @@
 <template id="variant-template">
     <tr class="variant-row">
         <td>
-            <select name="variants[__INDEX__][unit_id]" required>
-                <option value="">-- Đơn vị --</option>
+            <input
+                type="text"
+                name="variants[__INDEX__][name]"
+                placeholder="Ví dụ: Hộp 4 bánh"
+                required
+            >
+        </td>
+
+        <td>
+            <input
+                type="text"
+                name="variants[__INDEX__][sku]"
+                placeholder="VD: BANH-HOP4"
+                required
+            >
+        </td>
+
+        <td>
+            <select name="variants[__INDEX__][unit_id]">
+                <option value="">
+                    -- Không bắt buộc --
+                </option>
 
                 @foreach ($units as $unit)
                     <option value="{{ $unit->id }}">
-                        {{ $unit->name }} ({{ $unit->symbol }})
+                        {{ $unit->name }}
+                        ({{ $unit->symbol }})
                     </option>
                 @endforeach
             </select>
@@ -327,19 +370,9 @@
             <input
                 type="number"
                 name="variants[__INDEX__][quantity]"
-                value="1"
                 min="0.01"
                 step="0.01"
-                required
-            >
-        </td>
-
-        <td>
-            <input
-                type="text"
-                name="variants[__INDEX__][sku]"
-                placeholder="CAM-1KG"
-                required
+                placeholder="Tùy chọn"
             >
         </td>
 
@@ -417,7 +450,10 @@
             const rows = variantList.querySelectorAll('.variant-row');
 
             if (rows.length <= 1) {
-                alert('Sản phẩm phải có ít nhất một lựa chọn bán.');
+                alert(
+                    'Sản phẩm phải có ít nhất một phân loại.'
+                );
+
                 return;
             }
 

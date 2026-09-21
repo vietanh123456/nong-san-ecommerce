@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,38 +22,78 @@ class CartController extends Controller
         Product $product
     ): RedirectResponse {
         $validated = $request->validate([
+            'variant_id' => [
+                'required',
+                'integer',
+                'exists:product_variants,id',
+            ],
+
             'quantity' => [
-                'nullable',
+                'required',
                 'integer',
                 'min:1',
             ],
+        ], [
+            'variant_id.required' => 'Vui lòng chọn phân loại sản phẩm.',
+            'variant_id.exists' => 'Phân loại sản phẩm không hợp lệ.',
+            'quantity.required' => 'Vui lòng nhập số lượng.',
+            'quantity.integer' => 'Số lượng phải là số nguyên.',
+            'quantity.min' => 'Số lượng phải từ 1 trở lên.',
         ]);
 
-        $quantity = (int) ($validated['quantity'] ?? 1);
-
-        if ($quantity > $product->stock) {
+        if (!$product->status) {
             return back()->withErrors([
-                'quantity' => 'Số lượng vượt quá tồn kho.',
+                'product' => 'Sản phẩm hiện không được bán.',
+            ]);
+        }
+
+        $variant = $product->variants()
+            ->with('unit')
+            ->whereKey($validated['variant_id'])
+            ->where('status', true)
+            ->first();
+
+        if (!$variant) {
+            return back()->withErrors([
+                'variant_id' => 'Phân loại không thuộc sản phẩm này hoặc đã ngừng bán.',
+            ]);
+        }
+
+        $quantity = (int) $validated['quantity'];
+
+        if ($variant->stock <= 0) {
+            return back()->withErrors([
+                'quantity' => 'Phân loại này đã hết hàng.',
+            ]);
+        }
+
+        if ($quantity > $variant->stock) {
+            return back()->withErrors([
+                'quantity' => 'Số lượng vượt quá tồn kho của phân loại.',
             ]);
         }
 
         $cart = session()->get('cart', []);
-        $productId = $product->id;
+        $cartKey = (string) $variant->id;
 
-        $currentQuantity = $cart[$productId]['quantity'] ?? 0;
+        $currentQuantity = $cart[$cartKey]['quantity'] ?? 0;
         $newQuantity = $currentQuantity + $quantity;
 
-        if ($newQuantity > $product->stock) {
+        if ($newQuantity > $variant->stock) {
             return back()->withErrors([
-                'quantity' => 'Tổng số lượng vượt quá tồn kho.',
+                'quantity' => 'Tổng số lượng trong giỏ vượt quá tồn kho.',
             ]);
         }
 
-        $cart[$productId] = [
-            'id' => $productId,
+        $cart[$cartKey] = [
+            'id' => $product->id,
+            'product_id' => $product->id,
+            'variant_id' => $variant->id,
             'name' => $product->name,
+            'variant_name' => $variant->display_name,
+            'sku' => $variant->sku,
             'quantity' => $newQuantity,
-            'price' => $product->price,
+            'price' => (float) $variant->price,
             'image' => $product->image ?? '',
         ];
 
@@ -60,13 +101,13 @@ class CartController extends Controller
 
         return back()->with(
             'success',
-            'Đã thêm sản phẩm vào giỏ hàng!'
+            'Đã thêm phân loại sản phẩm vào giỏ hàng!'
         );
     }
 
     public function update(
         Request $request,
-        Product $product
+        int $variant
     ): RedirectResponse {
         $validated = $request->validate([
             'action' => [
@@ -76,27 +117,45 @@ class CartController extends Controller
         ]);
 
         $cart = session()->get('cart', []);
-        $productId = $product->id;
+        $cartKey = (string) $variant;
 
-        if (!isset($cart[$productId])) {
+        if (!isset($cart[$cartKey])) {
             return back()->withErrors([
-                'cart' => 'Sản phẩm không tồn tại trong giỏ hàng.',
+                'cart' => 'Phân loại không tồn tại trong giỏ hàng.',
             ]);
         }
 
         if ($validated['action'] === 'increase') {
-            if ($cart[$productId]['quantity'] >= $product->stock) {
+            $productVariant = ProductVariant::query()
+                ->with('product')
+                ->find($variant);
+
+            if (
+                !$productVariant ||
+                !$productVariant->status ||
+                !$productVariant->product ||
+                !$productVariant->product->status
+            ) {
+                return back()->withErrors([
+                    'cart' => 'Phân loại này hiện không còn được bán.',
+                ]);
+            }
+
+            if (
+                $cart[$cartKey]['quantity'] >=
+                $productVariant->stock
+            ) {
                 return back()->withErrors([
                     'quantity' => 'Số lượng đã đạt mức tồn kho.',
                 ]);
             }
 
-            $cart[$productId]['quantity']++;
+            $cart[$cartKey]['quantity']++;
         } else {
-            $cart[$productId]['quantity']--;
+            $cart[$cartKey]['quantity']--;
 
-            if ($cart[$productId]['quantity'] <= 0) {
-                unset($cart[$productId]);
+            if ($cart[$cartKey]['quantity'] <= 0) {
+                unset($cart[$cartKey]);
             }
         }
 
@@ -108,17 +167,18 @@ class CartController extends Controller
         );
     }
 
-    public function remove(Product $product): RedirectResponse
+    public function remove(int $variant): RedirectResponse
     {
         $cart = session()->get('cart', []);
+        $cartKey = (string) $variant;
 
-        unset($cart[$product->id]);
+        unset($cart[$cartKey]);
 
         session()->put('cart', $cart);
 
         return back()->with(
             'success',
-            'Đã xóa sản phẩm khỏi giỏ hàng!'
+            'Đã xóa phân loại khỏi giỏ hàng!'
         );
     }
 }

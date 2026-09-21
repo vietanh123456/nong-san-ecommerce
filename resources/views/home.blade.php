@@ -57,16 +57,20 @@
                 @endauth
 
                 {{-- Yêu thích --}}
-                <a
-                    href="{{ route('wishlist.index') }}"
-                    class="bg-emerald-700 hover:bg-emerald-600 px-3 py-2 rounded-full flex items-center gap-1.5 text-sm font-medium transition"
-                >
-                    <span>❤️ Yêu thích</span>
+                @auth
+                    @if (auth()->user()->role === 'customer')
+                        <a
+                            href="{{ route('wishlist.index') }}"
+                            class="bg-emerald-700 hover:bg-emerald-600 px-3 py-2 rounded-full flex items-center gap-1.5 text-sm font-medium transition"
+                        >
+                            <span>❤️ Yêu thích</span>
 
-                    <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                        {{ $wishlistCount ?? 0 }}
-                    </span>
-                </a>
+                            <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                                {{ $wishlistCount ?? 0 }}
+                            </span>
+                        </a>
+                    @endif
+                @endauth
 
                 {{-- Giỏ hàng --}}
                 <a
@@ -137,11 +141,22 @@
             </div>
         @endif
 
+        @if ($errors->any())
+            <div class="mb-5 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+                <ul class="list-disc list-inside text-sm">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         {{-- Kết quả tìm kiếm --}}
         @if (request('search'))
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <p class="text-gray-600">
                     Kết quả tìm kiếm cho:
+
                     <strong class="text-emerald-700">
                         “{{ request('search') }}”
                     </strong>
@@ -192,41 +207,23 @@
                         </h3>
 
                         <p class="text-emerald-600 font-bold text-lg mt-1">
-                            {{ number_format($product->price, 0, ',', '.') }}đ
+                            Từ
+                            {{ number_format($product->price, 0, ',', '.') }} đ
                         </p>
 
                         <p class="text-sm text-gray-500 mt-1">
-                            Tồn kho: {{ $product->stock }}
+                            Tổng tồn kho: {{ $product->stock }}
                         </p>
                     </div>
 
                     {{-- Thao tác --}}
                     <div class="p-4 pt-0 flex items-center gap-2">
-                        <form
-                            action="{{ route('cart.add', $product) }}"
-                            method="POST"
-                            class="flex-1"
+                        <a
+                            href="{{ route('products.show', $product->id) }}"
+                            class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-center font-medium py-2 px-3 rounded-lg text-sm transition"
                         >
-                            @csrf
-
-                            <input
-                                type="hidden"
-                                name="quantity"
-                                value="1"
-                            >
-
-                            <button
-                                type="submit"
-                                class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-3 rounded-lg text-sm transition"
-                                @disabled($product->stock <= 0)
-                            >
-                                @if ($product->stock > 0)
-                                    Thêm vào giỏ
-                                @else
-                                    Hết hàng
-                                @endif
-                            </button>
-                        </form>
+                            Chọn phân loại
+                        </a>
 
                         @auth
                             @if (auth()->user()->role === 'customer')
@@ -251,7 +248,10 @@
             @empty
                 <div class="col-span-full text-center py-12 text-gray-500">
                     <div class="text-5xl mb-3">🔍</div>
-                    <p>Không tìm thấy sản phẩm nào!</p>
+
+                    <p>
+                        Không tìm thấy sản phẩm nào!
+                    </p>
                 </div>
             @endforelse
         </div>
