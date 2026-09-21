@@ -60,7 +60,6 @@
                     {{ $product->name }}
                 </h1>
 
-                {{-- Điểm đánh giá --}}
                 <div class="flex items-center gap-2 mb-3">
                     <div class="text-amber-400 text-lg">
                         @for ($star = 1; $star <= 5; $star++)
@@ -125,7 +124,7 @@
                             for="variant_id"
                             class="block text-xs font-bold text-gray-700 uppercase mb-2"
                         >
-                            Phân loại sản phẩm:
+                            Phân loại sản phẩm
                         </label>
 
                         <select
@@ -178,7 +177,7 @@
                             for="quantity"
                             class="text-xs font-bold text-gray-700 uppercase"
                         >
-                            Số lượng:
+                            Số lượng
                         </label>
 
                         <input
@@ -224,7 +223,6 @@
                 </div>
             @endif
 
-            {{-- Yêu thích --}}
             @auth
                 @if (auth()->user()->role === 'customer')
                     <form
@@ -257,6 +255,7 @@
                 <form
                     action="{{ route('reviews.store', $product) }}"
                     method="POST"
+                    enctype="multipart/form-data"
                     class="space-y-4"
                 >
                     @csrf
@@ -320,6 +319,34 @@
                         @enderror
                     </div>
 
+                    <div>
+                        <label
+                            for="review-image"
+                            class="block text-sm font-bold text-gray-700 mb-2"
+                        >
+                            Ảnh đánh giá
+                        </label>
+
+                        <input
+                            id="review-image"
+                            type="file"
+                            name="image"
+                            accept=".jpg,.jpeg,.png,.webp"
+                            class="block w-full text-sm text-gray-600 border border-gray-200 rounded-xl file:border-0 file:bg-emerald-50 file:text-emerald-700 file:font-bold file:px-4 file:py-3 hover:file:bg-emerald-100"
+                        >
+
+                        <p class="text-xs text-gray-500 mt-2">
+                            Không bắt buộc. Chấp nhận JPG, JPEG, PNG hoặc WEBP;
+                            tối đa 2 MB. Chọn ảnh mới sẽ thay ảnh cũ.
+                        </p>
+
+                        @error('image')
+                            <p class="text-sm text-red-600 mt-1">
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+
                     <button
                         type="submit"
                         class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl text-sm transition"
@@ -328,7 +355,7 @@
                     </button>
 
                     <p class="text-xs text-gray-500">
-                        Đánh giá của bạn sẽ được đăng công khai sau khi gửi.
+                        Đánh giá của bạn sẽ được đăng công khai ngay sau khi gửi.
                     </p>
                 </form>
             @else
@@ -392,6 +419,21 @@
                             <p class="text-sm text-gray-600 leading-relaxed mt-3">
                                 {{ $review->comment }}
                             </p>
+                        @endif
+
+                        @if ($review->image)
+                            <a
+                                href="{{ asset('storage/' . $review->image) }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-block mt-4"
+                            >
+                                <img
+                                    src="{{ asset('storage/' . $review->image) }}"
+                                    alt="Ảnh đánh giá của {{ $review->user->name ?? 'khách hàng' }}"
+                                    class="w-40 h-40 object-cover rounded-xl border border-gray-200 hover:opacity-90 transition"
+                                >
+                            </a>
                         @endif
                     </div>
                 @endforeach
