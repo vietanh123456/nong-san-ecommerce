@@ -7,6 +7,7 @@ use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\ShippingZone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -347,7 +348,7 @@ class CheckoutController extends Controller
         $shippingFee =
             (float) $shippingFeeModel->fee;
 
-        /*
+                /*
         |--------------------------------------------------------------------------
         | TÍNH LẠI GIÁ TỪ DATABASE
         |--------------------------------------------------------------------------
@@ -355,37 +356,41 @@ class CheckoutController extends Controller
 
         $subtotal = 0;
 
-        foreach ($cart as $productId => $item) {
-            $product = Product::find($productId);
+        foreach ($cart as $item) {
+            $variant = ProductVariant::query()
+                ->with('product')
+                ->whereKey($item['variant_id'] ?? null)
+                ->where('status', true)
+                ->first();
 
-            if (!$product) {
+            if (
+                !$variant ||
+                !$variant->product ||
+                !$variant->product->status
+            ) {
                 return back()->withErrors([
-                    'order' =>
-                        'Có sản phẩm không còn tồn tại.',
+                    'order' => 'Có phân loại sản phẩm không còn được bán.',
                 ]);
             }
 
-            $quantity = (int) $item['quantity'];
+            $quantity = (int) ($item['quantity'] ?? 0);
 
             if ($quantity <= 0) {
                 return back()->withErrors([
-                    'order' =>
-                        'Số lượng sản phẩm không hợp lệ.',
+                    'order' => 'Số lượng sản phẩm không hợp lệ.',
                 ]);
             }
 
-            if ($product->stock < $quantity) {
+            if ($variant->stock < $quantity) {
                 return back()->withErrors([
                     'order' =>
-                        'Sản phẩm "'
-                        . $product->name
+                        'Phân loại "'
+                        . $variant->display_name
                         . '" không đủ tồn kho.',
                 ]);
             }
 
-            $subtotal +=
-                (float) $product->price
-                * $quantity;
+            $subtotal += (float) $variant->price * $quantity;
         }
 
         /*
@@ -503,56 +508,51 @@ class CheckoutController extends Controller
                     |--------------------------------------------------------------------------
                     */
 
-                    foreach (
-                        $cart as $productId => $item
-                    ) {
-                        $product =
-                            Product::lockForUpdate()
-                                ->find($productId);
+                    foreach ($cart as $item) {
+                        $variant = ProductVariant::query()
+                            ->with('product')
+                            ->lockForUpdate()
+                            ->find($item['variant_id'] ?? null);
 
-                        if (!$product) {
+                        if (
+                            !$variant ||
+                            !$variant->status ||
+                            !$variant->product ||
+                            !$variant->product->status
+                        ) {
                             throw new \Exception(
-                                'Sản phẩm không còn tồn tại.'
+                                'Phân loại sản phẩm không còn được bán.'
                             );
                         }
 
-                        $quantity =
-                            (int) $item['quantity'];
+                        $product = $variant->product;
+                        $quantity = (int) ($item['quantity'] ?? 0);
 
-                        if (
-                            $product->stock <
-                            $quantity
-                        ) {
+                        if ($quantity <= 0) {
                             throw new \Exception(
-                                'Sản phẩm "'
-                                . $product->name
+                                'Số lượng sản phẩm không hợp lệ.'
+                            );
+                        }
+
+                        if ($variant->stock < $quantity) {
+                            throw new \Exception(
+                                'Phân loại "'
+                                . $variant->display_name
                                 . '" không đủ tồn kho.'
                             );
                         }
 
-                        $price =
-                            (float) $product->price;
+                        $price = (float) $variant->price;
+                        $itemSubtotal = $price * $quantity;
 
-                        $itemSubtotal =
-                            $price * $quantity;
+                        $orderDetail = new OrderDetail();
 
-                        $orderDetail =
-                            new OrderDetail();
-
-                        $orderDetail->order_id =
-                            $order->id;
-
-                        $orderDetail->product_id =
-                            $product->id;
-
-                        $orderDetail->quantity =
-                            $quantity;
-
-                        $orderDetail->price =
-                            $price;
-
-                        $orderDetail->subtotal =
-                            $itemSubtotal;
+                        $orderDetail->order_id = $order->id;
+                        $orderDetail->product_id = $product->id;
+                        $orderDetail->variant_id = $variant->id;
+                        $orderDetail->quantity = $quantity;
+                        $orderDetail->price = $price;
+                        $orderDetail->subtotal = $itemSubtotal;
 
                         $orderDetail->save();
 
@@ -562,14 +562,11 @@ class CheckoutController extends Controller
                         |--------------------------------------------------------------------------
                         */
 
-                        if (
-                            $validated['payment_method']
-                            === 'cod'
-                        ) {
-                            $product->stock -=
-                                $quantity;
+                        if ($validated['payment_method'] === 'cod') {
+                            $variant->stock -= $quantity;
+                            $variant->save();
 
-                            $product->save();
+                            $this->syncProductStock($product->id);
                         }
                     }
 
@@ -1271,37 +1268,59 @@ class CheckoutController extends Controller
                 | STOCK
                 |--------------------------------------------------------------------------
                 */
+                
+                foreach ($orderDetails as $detail) {
+                    if ($detail->variant_id) {
+                        $variant = ProductVariant::query()
+                            ->lockForUpdate()
+                            ->find($detail->variant_id);
 
-                foreach (
-                    $orderDetails as $detail
-                ) {
-                    $product =
-                        Product::lockForUpdate()
-                            ->find(
-                                $detail->product_id
+                        if (!$variant || !$variant->status) {
+                            throw new \Exception(
+                                'Phân loại trong đơn hàng không còn được bán.'
                             );
+                        }
 
-                    if (!$product) {
-                        throw new \Exception(
-                            'Sản phẩm trong đơn hàng không còn tồn tại.'
+                        if ($variant->stock < $detail->quantity) {
+                            throw new \Exception(
+                                'Phân loại "'
+                                . $variant->display_name
+                                . '" không đủ tồn kho.'
+                            );
+                        }
+
+                        $variant->stock -= $detail->quantity;
+                        $variant->save();
+
+                        $this->syncProductStock(
+                            $detail->product_id
                         );
+                    } else {
+                        /*
+                        * Tương thích với đơn hàng cũ
+                        * chưa lưu variant_id.
+                        */
+                        $product = Product::query()
+                            ->lockForUpdate()
+                            ->find($detail->product_id);
+
+                        if (!$product) {
+                            throw new \Exception(
+                                'Sản phẩm trong đơn hàng không còn tồn tại.'
+                            );
+                        }
+
+                        if ($product->stock < $detail->quantity) {
+                            throw new \Exception(
+                                'Sản phẩm "'
+                                . $product->name
+                                . '" không đủ tồn kho.'
+                            );
+                        }
+
+                        $product->stock -= $detail->quantity;
+                        $product->save();
                     }
-
-                    if (
-                        $product->stock <
-                        $detail->quantity
-                    ) {
-                        throw new \Exception(
-                            'Sản phẩm "'
-                            . $product->name
-                            . '" không đủ tồn kho.'
-                        );
-                    }
-
-                    $product->stock -=
-                        $detail->quantity;
-
-                    $product->save();
                 }
 
                 /*
@@ -1410,7 +1429,19 @@ class CheckoutController extends Controller
 
         return $subtotal;
     }
+    
+    private function syncProductStock(int $productId): void
+    {
+        $totalStock = ProductVariant::query()
+            ->where('product_id', $productId)
+            ->sum('stock');
 
+        Product::query()
+            ->whereKey($productId)
+            ->update([
+                'stock' => $totalStock,
+            ]);
+    }
     /*
     |--------------------------------------------------------------------------
     | COUPON VALIDATION
