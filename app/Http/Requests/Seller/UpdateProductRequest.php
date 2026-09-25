@@ -11,7 +11,6 @@ class UpdateProductRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Sẽ kiểm tra quyền sở hữu sản phẩm sau khi Auth hoàn thành.
         return true;
     }
 
@@ -65,8 +64,27 @@ class UpdateProductRequest extends FormRequest
                 'exists:product_variants,id',
             ],
 
-            'variants.*.unit_id' => [
+            'variants.*.name' => [
                 'required',
+                'string',
+                'max:255',
+                'distinct',
+            ],
+
+            'variants.*.image' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+
+            'variants.*.remove_image' => [
+                'nullable',
+                'boolean',
+            ],
+
+            'variants.*.unit_id' => [
+                'nullable',
                 Rule::exists('units', 'id')
                     ->where('status', true),
             ],
@@ -79,7 +97,7 @@ class UpdateProductRequest extends FormRequest
             ],
 
             'variants.*.quantity' => [
-                'required',
+                'nullable',
                 'numeric',
                 'gt:0',
             ],
@@ -107,15 +125,23 @@ class UpdateProductRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                foreach ($this->input('variants', []) as $index => $variant) {
+                foreach (
+                    $this->input('variants', [])
+                    as $index => $variant
+                ) {
                     if (empty($variant['sku'])) {
                         continue;
                     }
 
-                    $query = ProductVariant::where('sku', $variant['sku']);
+                    $query = ProductVariant::query()
+                        ->where('sku', $variant['sku']);
 
                     if (!empty($variant['id'])) {
-                        $query->where('id', '!=', $variant['id']);
+                        $query->where(
+                            'id',
+                            '!=',
+                            $variant['id']
+                        );
                     }
 
                     if ($query->exists()) {
@@ -142,18 +168,28 @@ class UpdateProductRequest extends FormRequest
             'image.mimes' => 'Ảnh phải có định dạng JPG, JPEG, PNG hoặc WEBP.',
             'image.max' => 'Dung lượng ảnh không được vượt quá 2 MB.',
 
-            'variants.required' => 'Sản phẩm phải có ít nhất một lựa chọn bán.',
-            'variants.min' => 'Sản phẩm phải có ít nhất một lựa chọn bán.',
+            'variants.required' => 'Sản phẩm phải có ít nhất một phân loại.',
+            'variants.min' => 'Sản phẩm phải có ít nhất một phân loại.',
 
-            'variants.*.id.exists' => 'Biến thể sản phẩm không tồn tại.',
-            'variants.*.unit_id.required' => 'Vui lòng chọn đơn vị.',
+            'variants.*.id.exists' => 'Phân loại sản phẩm không tồn tại.',
+
+            'variants.*.name.required' => 'Vui lòng nhập tên phân loại.',
+            'variants.*.name.max' => 'Tên phân loại không được vượt quá 255 ký tự.',
+            'variants.*.name.distinct' => 'Tên phân loại không được trùng nhau.',
+
+            'variants.*.image.image' => 'Ảnh phân loại phải là hình ảnh.',
+            'variants.*.image.mimes' => 'Ảnh phân loại phải có định dạng JPG, JPEG, PNG hoặc WEBP.',
+            'variants.*.image.max' => 'Ảnh phân loại không được vượt quá 2 MB.',
+
+            'variants.*.remove_image.boolean' => 'Tùy chọn xóa ảnh phân loại không hợp lệ.',
+
             'variants.*.unit_id.exists' => 'Đơn vị không hợp lệ.',
 
             'variants.*.sku.required' => 'Vui lòng nhập mã SKU.',
             'variants.*.sku.distinct' => 'Mã SKU không được trùng nhau.',
 
-            'variants.*.quantity.required' => 'Vui lòng nhập khối lượng.',
-            'variants.*.quantity.gt' => 'Khối lượng phải lớn hơn 0.',
+            'variants.*.quantity.numeric' => 'Quy cách phải là một số.',
+            'variants.*.quantity.gt' => 'Quy cách phải lớn hơn 0.',
 
             'variants.*.price.required' => 'Vui lòng nhập giá.',
             'variants.*.price.min' => 'Giá không được là số âm.',

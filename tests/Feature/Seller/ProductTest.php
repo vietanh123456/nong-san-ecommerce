@@ -43,6 +43,7 @@ class ProductTest extends TestCase
                 ),
                 'variants' => [
                     [
+                        'name' => 'Túi 1kg',
                         'unit_id' => $kilogram->id,
                         'sku' => 'CAM-1KG',
                         'quantity' => 1,
@@ -51,6 +52,7 @@ class ProductTest extends TestCase
                         'status' => 1,
                     ],
                     [
+                        'name' => 'Túi 5kg',
                         'unit_id' => $kilogram->id,
                         'sku' => 'CAM-5KG',
                         'quantity' => 5,
@@ -59,6 +61,7 @@ class ProductTest extends TestCase
                         'status' => 1,
                     ],
                     [
+                        'name' => 'Thùng 10kg',
                         'unit_id' => $box->id,
                         'sku' => 'CAM-THUNG-10KG',
                         'quantity' => 10,
@@ -82,6 +85,7 @@ class ProductTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('product_variants', [
+            'name' => 'Túi 1kg',
             'sku' => 'CAM-1KG',
             'quantity' => 1,
             'price' => 45000,
@@ -89,6 +93,7 @@ class ProductTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('product_variants', [
+            'name' => 'Thùng 10kg',
             'sku' => 'CAM-THUNG-10KG',
             'quantity' => 10,
             'price' => 420000,
@@ -101,6 +106,47 @@ class ProductTest extends TestCase
             ->firstOrFail();
 
         Storage::disk('public')->assertExists($product->image);
+    }
+
+    public function test_seller_can_create_flexible_variant_without_unit(): void
+    {
+        $seller = User::factory()->create([
+            'role' => 'seller',
+        ]);
+
+        $category = $this->createCategory();
+
+        $response = $this
+            ->actingAs($seller)
+            ->post(route('seller.products.store'), [
+                'category_id' => $category->id,
+                'name' => 'Giỏ quà đặc sản',
+                'description' => 'Giỏ quà đặc sản vùng miền.',
+                'origin' => 'Việt Nam',
+                'status' => 1,
+                'variants' => [
+                    [
+                        'name' => 'Combo quà biếu',
+                        'sku' => 'COMBO-QUA-BIEU',
+                        'price' => 500000,
+                        'stock' => 12,
+                        'status' => 1,
+                    ],
+                ],
+            ]);
+
+        $response->assertRedirect(
+            route('seller.products.index')
+        );
+
+        $this->assertDatabaseHas('product_variants', [
+            'name' => 'Combo quà biếu',
+            'sku' => 'COMBO-QUA-BIEU',
+            'unit_id' => null,
+            'quantity' => null,
+            'price' => 500000,
+            'stock' => 12,
+        ]);
     }
 
     public function test_negative_price_and_stock_are_rejected(): void
@@ -120,6 +166,7 @@ class ProductTest extends TestCase
                 'status' => 1,
                 'variants' => [
                     [
+                        'name' => 'Phân loại không hợp lệ',
                         'unit_id' => $unit->id,
                         'sku' => 'INVALID-01',
                         'quantity' => 1,
@@ -164,6 +211,7 @@ class ProductTest extends TestCase
                 ),
                 'variants' => [
                     [
+                        'name' => 'Hộp thử nghiệm',
                         'unit_id' => $unit->id,
                         'sku' => 'CAM-TEST',
                         'quantity' => 1,
@@ -214,6 +262,7 @@ class ProductTest extends TestCase
                 'status' => 1,
                 'variants' => [
                     [
+                        'name' => 'Loại tiêu chuẩn',
                         'unit_id' => $unit->id,
                         'sku' => 'OTHER-SELLER-01',
                         'quantity' => 1,

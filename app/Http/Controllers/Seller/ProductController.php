@@ -58,33 +58,62 @@ class ProductController extends Controller
         $data['stock'] = collect($variants)->sum('stock');
         $data['status'] = $request->boolean('status');
 
-        $imagePath = null;
+        $productImagePath = null;
+        $variantImagePaths = [];
 
         try {
             if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')
+                $productImagePath = $request->file('image')
                     ->store('products', 'public');
 
-                $data['image'] = $imagePath;
+                $data['image'] = $productImagePath;
             }
 
-            DB::transaction(function () use ($data, $variants): void {
+            foreach ($variants as $index => $variant) {
+                if (
+                    $request->hasFile(
+                        "variants.$index.image"
+                    )
+                ) {
+                    $variantImagePaths[$index] = $request
+                        ->file("variants.$index.image")
+                        ->store('product-variants', 'public');
+                }
+            }
+
+            DB::transaction(function () use (
+                $data,
+                $variants,
+                $variantImagePaths
+            ): void {
                 $product = Product::create($data);
 
-                foreach ($variants as $variant) {
+                foreach ($variants as $index => $variant) {
                     $product->variants()->create([
-                        'unit_id' => $variant['unit_id'],
+                        'name' => $variant['name'],
+                        'image' => $variantImagePaths[$index]
+                            ?? null,
+                        'unit_id' => $variant['unit_id']
+                            ?? null,
                         'sku' => $variant['sku'],
-                        'quantity' => $variant['quantity'],
+                        'quantity' => $variant['quantity']
+                            ?? null,
                         'price' => $variant['price'],
                         'stock' => $variant['stock'],
-                        'status' => (bool) ($variant['status'] ?? true),
+                        'status' => (bool) (
+                            $variant['status'] ?? true
+                        ),
                     ]);
                 }
             });
         } catch (Throwable $exception) {
-            if ($imagePath !== null) {
-                Storage::disk('public')->delete($imagePath);
+            if ($productImagePath !== null) {
+                Storage::disk('public')
+                    ->delete($productImagePath);
+            }
+
+            foreach ($variantImagePaths as $path) {
+                Storage::disk('public')->delete($path);
             }
 
             throw $exception;
@@ -99,7 +128,11 @@ class ProductController extends Controller
     {
         $this->ensureProductBelongsToSeller($product);
 
-        $product->load(['category', 'variants.unit', 'reviews.user']);
+        $product->load([
+            'category',
+            'variants.unit',
+            'reviews.user',
+        ]);
 
         return view('seller.products.show', compact('product'));
     }
@@ -141,33 +174,52 @@ class ProductController extends Controller
         $data['stock'] = collect($variants)->sum('stock');
         $data['status'] = $request->boolean('status');
 
-        $oldImage = $product->image;
-        $newImage = null;
+        $oldProductImage = $product->image;
+        $newProductImage = null;
+        $newVariantImages = [];
+        $variantImagesToDelete = [];
 
         try {
             if ($request->hasFile('image')) {
-                $newImage = $request->file('image')
+                $newProductImage = $request->file('image')
                     ->store('products', 'public');
 
-                $data['image'] = $newImage;
+                $data['image'] = $newProductImage;
+            }
+
+            foreach ($variants as $index => $variantData) {
+                if (
+                    $request->hasFile(
+                        "variants.$index.image"
+                    )
+                ) {
+                    $newVariantImages[$index] = $request
+                        ->file("variants.$index.image")
+                        ->store('product-variants', 'public');
+                }
             }
 
             DB::transaction(function () use (
                 $product,
                 $data,
-                $variants
+                $variants,
+                $newVariantImages,
+                &$variantImagesToDelete
             ): void {
                 $product->update($data);
 
                 $keptVariantIds = [];
 
-                foreach ($variants as $variantData) {
+                foreach ($variants as $index => $variantData) {
                     $variantId = $variantData['id'] ?? null;
 
                     $values = [
-                        'unit_id' => $variantData['unit_id'],
+                        'name' => $variantData['name'],
+                        'unit_id' => $variantData['unit_id']
+                            ?? null,
                         'sku' => $variantData['sku'],
-                        'quantity' => $variantData['quantity'],
+                        'quantity' => $variantData['quantity']
+                            ?? null,
                         'price' => $variantData['price'],
                         'stock' => $variantData['stock'],
                         'status' => (bool) (
@@ -179,12 +231,50 @@ class ProductController extends Controller
                         $variant = $product->variants()
                             ->findOrFail($variantId);
 
+                        if (isset($newVariantImages[$index])) {
+                            if ($variant->image) {
+                                $variantImagesToDelete[] =
+                                    $variant->image;
+                            }
+
+                            $values['image'] =
+                                $newVariantImages[$index];
+                        } elseif (
+                            (bool) (
+                                $variantData['remove_image']
+                                ?? false
+                            )
+                        ) {
+                            if ($variant->image) {
+                                $variantImagesToDelete[] =
+                                    $variant->image;
+                            }
+
+                            $values['image'] = null;
+                        }
+
                         $variant->update($values);
                     } else {
-                        $variant = $product->variants()->create($values);
+                        $values['image'] =
+                            $newVariantImages[$index]
+                            ?? null;
+
+                        $variant = $product->variants()
+                            ->create($values);
                     }
 
                     $keptVariantIds[] = $variant->id;
+                }
+
+                $removedVariants = $product->variants()
+                    ->whereNotIn('id', $keptVariantIds)
+                    ->get();
+
+                foreach ($removedVariants as $removedVariant) {
+                    if ($removedVariant->image) {
+                        $variantImagesToDelete[] =
+                            $removedVariant->image;
+                    }
                 }
 
                 $product->variants()
@@ -192,15 +282,31 @@ class ProductController extends Controller
                     ->delete();
             });
         } catch (Throwable $exception) {
-            if ($newImage !== null) {
-                Storage::disk('public')->delete($newImage);
+            if ($newProductImage !== null) {
+                Storage::disk('public')
+                    ->delete($newProductImage);
+            }
+
+            foreach ($newVariantImages as $path) {
+                Storage::disk('public')->delete($path);
             }
 
             throw $exception;
         }
 
-        if ($newImage !== null && $oldImage !== null) {
-            Storage::disk('public')->delete($oldImage);
+        if (
+            $newProductImage !== null &&
+            $oldProductImage !== null
+        ) {
+            Storage::disk('public')
+                ->delete($oldProductImage);
+        }
+
+        foreach (
+            array_unique($variantImagesToDelete)
+            as $path
+        ) {
+            Storage::disk('public')->delete($path);
         }
 
         return redirect()
@@ -212,12 +318,21 @@ class ProductController extends Controller
     {
         $this->ensureProductBelongsToSeller($product);
 
-        $image = $product->image;
+        $productImage = $product->image;
+
+        $variantImages = $product->variants()
+            ->whereNotNull('image')
+            ->pluck('image')
+            ->all();
 
         $product->delete();
 
-        if ($image !== null) {
-            Storage::disk('public')->delete($image);
+        if ($productImage !== null) {
+            Storage::disk('public')->delete($productImage);
+        }
+
+        foreach ($variantImages as $path) {
+            Storage::disk('public')->delete($path);
         }
 
         return redirect()
@@ -225,8 +340,9 @@ class ProductController extends Controller
             ->with('success', 'Xóa sản phẩm thành công.');
     }
 
-    private function ensureProductBelongsToSeller(Product $product): void
-    {
+    private function ensureProductBelongsToSeller(
+        Product $product
+    ): void {
         abort_unless(
             $product->seller_id === Auth::id(),
             403,

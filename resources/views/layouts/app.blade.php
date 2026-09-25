@@ -27,128 +27,118 @@
 </head>
 
 <body class="bg-gray-50 flex flex-col min-h-screen">
+    @php
+        $isAdminArea = request()->routeIs('admin.*');
+        $cartCount = array_sum(
+            array_column(session('cart', []), 'quantity')
+        );
+    @endphp
 
-    {{-- Header chính --}}
-    <header class="bg-[#0e5c36] text-white py-3.5 px-6 shadow-md sticky top-0 z-40">
-
-        <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
-
-            {{-- Logo --}}
+    <header class="bg-[#0e5c36] text-white py-3.5 px-4 md:px-6 shadow-md sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
             <a
                 href="{{ route('home') }}"
                 class="text-xl font-bold flex items-center gap-2 hover:opacity-90 transition"
             >
-                🌱 <span>Nông Sản Việt</span>
+                <span>🌱</span>
+                <span>Nông Sản Việt</span>
             </a>
 
-            {{-- Menu bên phải --}}
-            <div class="flex flex-wrap items-center gap-3 md:gap-5 text-sm">
-
-                {{-- Danh sách sản phẩm --}}
+            <nav class="flex flex-wrap items-center gap-2 md:gap-3 text-sm">
                 <a
                     href="{{ route('products.index') }}"
-                    class="hover:underline font-medium"
+                    class="inline-flex items-center px-3 py-2 rounded-lg hover:bg-white/10 font-medium transition"
                 >
                     Sản phẩm
                 </a>
 
-                {{-- Admin Panel --}}
                 @auth
                     @if (auth()->user()->role === 'admin')
                         <a
                             href="{{ route('admin.dashboard') }}"
-                            class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-full text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-white"
+                            class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-semibold transition"
                         >
-                            Admin Panel
+                            <span>🛡️</span>
+                            <span>Admin Panel</span>
+                        </a>
+                    @elseif (auth()->user()->role === 'seller')
+                        <a
+                            href="{{ route('seller.dashboard') }}"
+                            class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg font-semibold transition"
+                        >
+                            <span>🏪</span>
+                            <span>Seller Dashboard</span>
                         </a>
                     @endif
                 @endauth
 
-                {{-- Yêu thích --}}
                 @auth
-                    <a
-                        href="{{ route('wishlist.index') }}"
-                        class="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-white px-3 py-1.5 rounded-full text-sm font-medium transition"
-                    >
-                        <span>❤️ Yêu thích</span>
+                    @if (auth()->user()->role === 'customer')
+                        <a
+                            href="{{ route('wishlist.index') }}"
+                            class="inline-flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-white px-3 py-2 rounded-full font-medium transition"
+                        >
+                            <span>❤️ Yêu thích</span>
 
-                        <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                            {{ \App\Models\Wishlist::where('user_id', auth()->id())->count() }}
-                        </span>
-                    </a>
+                            <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                {{ \App\Models\Wishlist::where(
+                                    'user_id',
+                                    auth()->id()
+                                )->count() }}
+                            </span>
+                        </a>
+                    @endif
                 @endauth
 
-                {{-- Giỏ hàng --}}
-                <a
-                    href="{{ route('cart.index') }}"
-                    class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition"
-                >
-                    <span>🛒 Giỏ hàng</span>
+                @guest
+                    <a
+                        href="{{ route('cart.index') }}"
+                        class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-full font-medium transition"
+                    >
+                        <span>🛒 Giỏ hàng</span>
 
-                    <span class="bg-white text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                        {{ array_sum(array_column(session('cart', []), 'quantity')) }}
-                    </span>
-                </a>
+                        <span class="bg-white text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                            {{ $cartCount }}
+                        </span>
+                    </a>
+                @endguest
 
-                {{-- Lịch sử đơn hàng --}}
+                @auth
+                    @if (auth()->user()->role === 'customer')
+                        <a
+                            href="{{ route('cart.index') }}"
+                            class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-full font-medium transition"
+                        >
+                            <span>🛒 Giỏ hàng</span>
+
+                            <span class="bg-white text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                                {{ $cartCount }}
+                            </span>
+                        </a>
+                    @endif
+                @endauth
+
                 @auth
                     @if (auth()->user()->role !== 'admin')
                         <a
                             href="{{ route('orders.index') }}"
-                            class="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 text-white px-3 py-1.5 rounded-full text-sm font-medium transition"
+                            class="inline-flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 text-white px-3 py-2 rounded-full font-medium transition"
                         >
                             <span>📦 Đơn hàng</span>
                         </a>
                     @endif
                 @endauth
 
-                {{-- Thông tin đăng nhập --}}
                 @auth
+                    <div class="flex flex-wrap items-center gap-2 border-l border-white/20 pl-3">
+                        <a
+                            href="{{ route('profile') }}"
+                            class="inline-flex items-center gap-1 font-semibold hover:underline"
+                        >
+                            <span>👤</span>
+                            <span>{{ auth()->user()->name }}</span>
+                        </a>
 
-                    <div class="flex items-center gap-3 border-l border-white/20 pl-4">
-
-                        {{-- ADMIN --}}
-                        @if (auth()->user()->role === 'admin')
-
-                            <a
-                                href="{{ route('admin.dashboard') }}"
-                                class="font-semibold hover:underline flex items-center gap-1"
-                            >
-                                🛡️ {{ auth()->user()->name }}
-                            </a>
-
-                            <a
-                                href="{{ route('profile') }}"
-                                class="text-xs text-white/80 hover:text-white hover:underline"
-                            >
-                                Hồ sơ
-                            </a>
-
-                        {{-- SELLER --}}
-                        @elseif (auth()->user()->role === 'seller')
-
-                            <a
-                                href="{{ route('seller.dashboard') }}"
-                                class="font-semibold hover:underline"
-                            >
-                                🏪 Kênh người bán
-                            </a>
-
-                        @endif
-
-                        {{-- Hồ sơ người dùng / seller --}}
-                        @if (auth()->user()->role !== 'admin')
-
-                            <a
-                                href="{{ route('profile') }}"
-                                class="font-semibold hover:underline flex items-center gap-1"
-                            >
-                                👤 {{ auth()->user()->name }}
-                            </a>
-
-                        @endif
-
-                        {{-- Đăng xuất --}}
                         <form
                             action="{{ route('logout') }}"
                             method="POST"
@@ -158,20 +148,14 @@
 
                             <button
                                 type="submit"
-                                class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                                class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"
                             >
                                 Đăng xuất
                             </button>
-
                         </form>
-
                     </div>
-
                 @else
-
-                    {{-- Chưa đăng nhập --}}
-                    <div class="flex items-center gap-2 border-l border-white/20 pl-4">
-
+                    <div class="flex items-center gap-2 border-l border-white/20 pl-3">
                         <a
                             href="{{ route('login') }}"
                             class="hover:underline font-medium"
@@ -187,31 +171,17 @@
                         >
                             Đăng ký
                         </a>
-
                     </div>
-
                 @endauth
-
-            </div>
-
+            </nav>
         </div>
-
     </header>
 
-    {{-- =====================================================
-        THÔNG BÁO
-    ====================================================== --}}
-
-    @php($isAdminArea = request()->routeIs('admin.*'))
-
-    {{-- Thành công --}}
     @if (session('success'))
-
         <div class="{{ $isAdminArea
             ? 'bg-slate-950 px-4 pt-4'
             : 'max-w-6xl w-full mx-auto mt-5 px-4'
         }}">
-
             <div
                 role="status"
                 class="{{ $isAdminArea
@@ -221,19 +191,14 @@
             >
                 {{ session('success') }}
             </div>
-
         </div>
-
     @endif
 
-    {{-- Cảnh báo --}}
     @if (session('warning'))
-
         <div class="{{ $isAdminArea
             ? 'bg-slate-950 px-4 pt-4'
             : 'max-w-6xl w-full mx-auto mt-5 px-4'
         }}">
-
             <div
                 role="status"
                 class="{{ $isAdminArea
@@ -243,19 +208,14 @@
             >
                 {{ session('warning') }}
             </div>
-
         </div>
-
     @endif
 
-    {{-- Lỗi --}}
     @if (session('error'))
-
         <div class="{{ $isAdminArea
             ? 'bg-slate-950 px-4 pt-4'
             : 'max-w-6xl w-full mx-auto mt-5 px-4'
         }}">
-
             <div
                 role="alert"
                 class="{{ $isAdminArea
@@ -265,32 +225,19 @@
             >
                 {{ session('error') }}
             </div>
-
         </div>
-
     @endif
-
-    {{-- =====================================================
-        NỘI DUNG TRANG
-    ====================================================== --}}
 
     <main class="flex-grow">
         @yield('content')
     </main>
 
-    {{-- =====================================================
-        FOOTER
-    ====================================================== --}}
-
     <footer class="bg-gray-800 text-gray-400 py-6 text-center text-xs border-t border-gray-700 mt-auto">
-
         <p>
             © 2026 Nông Sản Việt. Tất cả quyền được bảo lưu.
         </p>
-
     </footer>
 
     @stack('scripts')
-
 </body>
 </html>
