@@ -106,8 +106,15 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
 
+    // Xem trang Profile (GET)
     Route::get('/profile', [ProfileController::class, 'index'])
         ->name('profile');
+
+    // Cập nhật thông tin Profile / Đổi tên (POST hoặc PUT)
+    Route::post('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::put('/profile', [ProfileController::class, 'update']);
 
     Route::post(
         '/address/add',

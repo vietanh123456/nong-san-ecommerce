@@ -51,13 +51,19 @@
                     <a href="{{ route('register') }}" class="pb-3 text-gray-400 hover:text-gray-600">Đăng ký</a>
                 </div>
 
+    <!-- Hiển thị thông báo thành công (sau khi Đăng ký / Đăng xuất) -->
+                @if (session('success'))
+                    <div class="mb-4 p-3 bg-emerald-50 border-l-4 border-emerald-500 text-emerald-700 text-xs rounded">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
                 <!-- Hiển thị lỗi nếu có -->
                 @if ($errors->any())
                     <div class="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs rounded">
                         {{ $errors->first() }}
                     </div>
                 @endif
-
                 <!-- FORM ĐĂNG NHẬP (ĐÃ CẬP NHẬT ROUTE CHUẨN) -->
                 <form action="{{ route('login') }}" method="POST" class="space-y-5">
                     @csrf

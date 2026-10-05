@@ -87,13 +87,11 @@ class AuthController extends Controller
             'role' => 'customer',
         ]);
 
-        Auth::login($user);
-
-        $request->session()->regenerate();
+        // Đã bỏ dòng Auth::login($user) để không tự động đăng nhập
 
         return redirect()
-            ->route('home')
-            ->with('success', 'Đăng ký tài khoản thành công!');
+            ->route('login')
+            ->with('success', 'Đăng ký tài khoản thành công! Vui lòng đăng nhập.');
     }
 
     public function logout(Request $request): RedirectResponse
