@@ -11,6 +11,20 @@ class Order extends Model
 {
     use HasFactory;
 
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_PROCESSING = 'processing';
+
+    public const STATUS_SHIPPING = 'shipping';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const PAYMENT_STATUS_PAID = 'paid';
+
+    public const PAYMENT_STATUS_UNPAID = 'unpaid';
+
     protected $fillable = [
         'user_id',
         'address_id',
@@ -53,5 +67,13 @@ class Order extends Model
     public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    /**
+     * Chỉ lấy các đơn hàng được tính vào doanh thu (đã hoàn thành, chưa bị hủy).
+     */
+    public function scopeRevenueCountable($query)
+    {
+        return $query->where('status', self::STATUS_COMPLETED);
     }
 }

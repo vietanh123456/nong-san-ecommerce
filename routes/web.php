@@ -1,23 +1,24 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\StatisticsController as AdminStatisticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CertificateFileController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController as CustomerProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Seller\DashboardController;
+use App\Http\Controllers\Seller\OrderController as SellerOrderController;
 use App\Http\Controllers\Seller\ProductBatchController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
-use App\Http\Controllers\Seller\OrderController as SellerOrderController;
 use App\Http\Controllers\TraceController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\OrderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -170,10 +171,10 @@ Route::middleware('auth')->group(function (): void {
     ])->name('reviews.store');
 
     Route::get('/orders', [OrderController::class, 'index'])
-    ->name('orders.index');
+        ->name('orders.index');
 
     Route::get('/orders/{order}', [OrderController::class, 'show'])
-    ->name('orders.show');
+        ->name('orders.show');
 });
 
 /*
@@ -212,14 +213,14 @@ Route::middleware(['auth', 'seller'])
         ])->name('certificates.show');
 
         Route::get('/orders', [SellerOrderController::class, 'index'])
-        ->name('orders.index');
+            ->name('orders.index');
 
         Route::get('/orders/{order}', [SellerOrderController::class, 'show'])
-        ->name('orders.show');
+            ->name('orders.show');
 
         Route::patch('/orders/{order}/status', [
             SellerOrderController::class,
-            'updateStatus'
+            'updateStatus',
         ])->name('orders.status');
     });
 
@@ -287,9 +288,35 @@ Route::middleware(['auth', 'admin'])
             AdminDashboardController::class,
             'reviewReview',
         ])->name('reviews.review');
+
+        Route::get('/statistics', [
+            AdminStatisticsController::class,
+            'index',
+        ])->name('statistics.index');
     });
 
-    /*
+/*
+|--------------------------------------------------------------------------
+| API thống kê dành cho Admin (xác thực qua session đăng nhập hiện có)
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'admin'])
+    ->prefix('api/admin/statistics')
+    ->name('admin.api.statistics.')
+    ->group(function (): void {
+        Route::get('/revenue', [
+            AdminStatisticsController::class,
+            'revenue',
+        ])->name('revenue');
+
+        Route::get('/overview', [
+            AdminStatisticsController::class,
+            'overview',
+        ])->name('overview');
+    });
+
+/*
 |--------------------------------------------------------------------------
 | VNPay
 |--------------------------------------------------------------------------
