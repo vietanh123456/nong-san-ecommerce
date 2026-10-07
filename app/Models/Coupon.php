@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Coupon extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'code',
         'type',
@@ -22,17 +20,17 @@ class Coupon extends Model
         'status',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'value' => 'decimal:2',
+        'min_order' => 'decimal:2',
+        'max_discount' => 'decimal:2',
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+        'status' => 'boolean',
+    ];
+
+    public function orders(): HasMany
     {
-        return [
-            'value' => 'decimal:2',
-            'min_order' => 'decimal:2',
-            'max_discount' => 'decimal:2',
-            'usage_limit' => 'integer',
-            'used_count' => 'integer',
-            'start_date' => 'datetime',
-            'end_date' => 'datetime',
-            'status' => 'boolean',
-        ];
+        return $this->hasMany(Order::class);
     }
 }

@@ -19,6 +19,7 @@ use App\Http\Controllers\WishlistController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\CouponController;
 
 /*
 |--------------------------------------------------------------------------
@@ -331,3 +332,14 @@ Route::get(
     '/vnpay/ipn',
     [CheckoutController::class, 'vnpayIpn']
 )->name('vnpay.ipn');
+
+Route::middleware(['auth'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
+        Route::resource(
+            'coupons',
+            CouponController::class
+        )->except(['show']);
+    });

@@ -23,7 +23,39 @@
 <div class="admin-shell admin-console min-h-screen"><div class="max-w-7xl mx-auto px-4 sm:px-6 py-7 sm:py-10">
     <header class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6 mb-8">
         <div><p class="uppercase tracking-[.18em] text-xs font-semibold text-emerald-700">Trung tâm điều hành</p><h1 class="text-2xl sm:text-3xl font-bold mt-2 text-gray-800">Xin chào, {{ auth()->user()->name }}</h1><p class="text-gray-500 mt-2 max-w-2xl">Theo dõi hệ thống, xử lý nội dung cần duyệt và điều phối sàn nông sản từ một nơi.</p></div>
-        <nav aria-label="Điều hướng quản trị" class="grid grid-cols-2 sm:flex gap-2"><a class="admin-link rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-center" href="{{ route('admin.users.index') }}">Tài khoản</a><a class="admin-link rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-center" href="{{ route('admin.products.index') }}">Sản phẩm</a><a class="admin-link rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-center" href="{{ route('admin.certificates.index') }}">Chứng nhận</a><a class="admin-link rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-center" href="{{ route('admin.reviews.index') }}">Đánh giá</a><a class="admin-link rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-center" href="{{ route('admin.statistics.index') }}">Báo cáo doanh thu</a></nav>
+        <nav aria-label="Điều hướng quản trị" class="grid grid-cols-2 sm:flex gap-2">
+
+    <a class="admin-link rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-center"
+       href="{{ route('admin.users.index') }}">
+        Tài khoản
+    </a>
+
+    <a class="admin-link rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-center"
+       href="{{ route('admin.products.index') }}">
+        Sản phẩm
+    </a>
+
+    <a class="admin-link rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-center"
+       href="{{ route('admin.certificates.index') }}">
+        Chứng nhận
+    </a>
+
+    <a class="admin-link rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-center"
+       href="{{ route('admin.reviews.index') }}">
+        Đánh giá
+    </a>
+
+    <a class="admin-link rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-center"
+       href="{{ route('admin.statistics.index') }}">
+        Báo cáo doanh thu
+    </a>
+
+    <a class="admin-link rounded-lg border border-emerald-300 px-3 py-2 text-sm font-semibold text-center text-emerald-700"
+       href="{{ route('admin.coupons.index') }}">
+         Mã giảm giá
+    </a>
+
+</nav>
     </header>
 
 
