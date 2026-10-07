@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -17,13 +16,7 @@ class ProductController extends Controller
             ->where('status', true);
 
         if ($request->filled('search')) {
-            $search = trim($request->input('search'));
-
-            $query->where(function (Builder $query) use ($search): void {
-                $query
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
+            $query->search($request->input('search'));
         }
 
         if ($request->filled('category_id')) {
@@ -42,7 +35,7 @@ class ProductController extends Controller
         }
 
         $products = $query
-            ->paginate(12)
+            ->paginate(8)
             ->withQueryString();
 
         $categories = Category::query()

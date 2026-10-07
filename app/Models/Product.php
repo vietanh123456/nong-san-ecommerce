@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
@@ -22,6 +24,35 @@ class Product extends Model
         'image',
         'status',
     ];
+
+    protected $hidden = [
+        'search_name',
+        'search_description',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $product): void {
+            $product->search_name = self::normalizeSearchText($product->name);
+            $product->search_description = self::normalizeSearchText($product->description ?? '');
+        });
+    }
+
+    public function scopeSearch(Builder $query, string $search): void
+    {
+        $search = '%'.self::normalizeSearchText($search).'%';
+
+        $query->where(function (Builder $query) use ($search): void {
+            $query
+                ->where('search_name', 'like', $search)
+                ->orWhere('search_description', 'like', $search);
+        });
+    }
+
+    private static function normalizeSearchText(string $text): string
+    {
+        return mb_strtolower(Str::ascii(trim($text)));
+    }
 
     protected function casts(): array
     {
