@@ -2,7 +2,10 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>@yield('title', 'Seller Dashboard')</title>
 
@@ -42,6 +45,22 @@
 
         .header-nav a:hover {
             text-decoration: underline;
+        }
+
+        .home-link {
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 6px;
+        }
+
+        .home-link:hover {
+            color: #166534;
+            background: white;
+            text-decoration: none !important;
+        }
+
+        .seller-info {
+            white-space: nowrap;
         }
 
         .container {
@@ -218,6 +237,13 @@
 <body>
     <header class="header">
         <nav class="header-nav">
+            <a
+                href="{{ route('home') }}"
+                class="home-link"
+            >
+                ← Trang chủ
+            </a>
+
             <a href="{{ route('seller.dashboard') }}">
                 <strong>Seller Dashboard</strong>
             </a>
@@ -235,7 +261,7 @@
             </a>
         </nav>
 
-        <span>
+        <span class="seller-info">
             {{ auth()->user()->name ?? 'Người bán' }}
         </span>
     </header>
