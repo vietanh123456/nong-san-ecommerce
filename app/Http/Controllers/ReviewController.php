@@ -17,10 +17,10 @@ class ReviewController extends Controller
     ): RedirectResponse {
         $user = $request->user();
 
-        if ($user->role !== 'customer') {
+        if (!in_array($user->role, ['customer', 'seller'], true)) {
             abort(
                 403,
-                'Chỉ khách hàng mới có thể gửi đánh giá.'
+                'Chỉ khách hàng hoặc người bán mới có thể gửi đánh giá.'
             );
         }
 

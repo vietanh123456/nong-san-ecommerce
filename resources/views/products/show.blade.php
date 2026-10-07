@@ -224,7 +224,7 @@
             @endif
 
             @auth
-                @if (auth()->user()->role === 'customer')
+                @if (in_array(auth()->user()->role, ['customer', 'seller'], true))
                     <form
                         action="{{ route('wishlist.toggle', $product) }}"
                         method="POST"
@@ -251,7 +251,7 @@
         </h2>
 
         @auth
-            @if (auth()->user()->role === 'customer')
+            @if (in_array(auth()->user()->role, ['customer', 'seller'], true))
                 <form
                     action="{{ route('reviews.store', $product) }}"
                     method="POST"

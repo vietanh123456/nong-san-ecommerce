@@ -113,7 +113,7 @@ class ReviewTest extends TestCase
         $this->assertDatabaseCount('reviews', 0);
     }
 
-    public function test_seller_cannot_submit_a_customer_review(): void
+    public function test_seller_can_submit_a_public_review(): void
     {
         $seller = User::factory()->create([
             'role' => 'seller',
@@ -128,9 +128,14 @@ class ReviewTest extends TestCase
                 'comment' => 'Đánh giá của người bán.',
             ]);
 
-        $response->assertForbidden();
+        $response->assertRedirect();
 
-        $this->assertDatabaseCount('reviews', 0);
+        $this->assertDatabaseHas('reviews', [
+            'product_id' => $product->id,
+            'user_id' => $seller->id,
+            'rating' => 5,
+            'comment' => 'Đánh giá của người bán.',
+        ]);
     }
 
     public function test_customer_updates_existing_review_instead_of_creating_duplicate(): void
