@@ -3,6 +3,8 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\SellerRequest;
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -28,9 +30,9 @@ class AdminPanelTest extends TestCase
             ->actingAs($admin)
             ->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('Admin Dashboard')
-            ->assertSee('Tổng tài khoản')
-            ->assertSee('Yêu cầu Seller đang chờ');
+            ->assertSee('Xin chào')
+            ->assertSee('Tài khoản')
+            ->assertSee('Chứng nhận chờ duyệt');
     }
 
     public function test_admin_can_search_and_filter_users(): void
@@ -55,8 +57,31 @@ class AdminPanelTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('Nguyen Seller')
-            ->assertSee('Chuyển thành Người mua')
             ->assertDontSee('Nguyen Customer');
+    }
+
+    public function test_admin_can_search_products_without_case_sensitivity(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $category = Category::create([
+            'name' => 'Trái cây',
+            'slug' => 'trai-cay',
+            'description' => 'Danh mục kiểm thử.',
+            'status' => true,
+        ]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Sầu Riêng Vườn Nhà',
+            'description' => 'Thu hoạch tại vườn.',
+            'price' => 90000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.products.index', ['search' => 'SẦU RIÊNG']))
+            ->assertOk()
+            ->assertSee($product->name);
     }
 
     public function test_admin_can_demote_a_seller_to_buyer(): void

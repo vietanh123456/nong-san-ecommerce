@@ -57,29 +57,40 @@ class SellerRegisterController extends Controller
             ],
         ]);
 
-        $created = DB::transaction(function () use ($user, $validated): bool {
+        $saved = DB::transaction(function () use ($user, $validated): bool {
             $lockedUser = $user->newQuery()
                 ->whereKey($user->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($lockedUser->sellerRequests()->where('status', 'pending')->exists()) {
+            $sellerRequests = $lockedUser->sellerRequests();
+
+            if ((clone $sellerRequests)->where('status', 'pending')->exists()) {
                 return false;
             }
 
-            $lockedUser->sellerRequests()->create($validated);
+            $latestRequest = (clone $sellerRequests)->latest('id')->first();
+
+            if ($latestRequest?->status === 'rejected') {
+                $latestRequest->update([
+                    ...$validated,
+                    'status' => 'pending',
+                ]);
+            } else {
+                $sellerRequests->create($validated);
+            }
 
             return true;
         });
 
-        if (! $created) {
+        if (! $saved) {
             return redirect()
-                ->route('seller.register')
+                ->route('become-seller')
                 ->with('warning', 'Bạn đã có yêu cầu đang chờ Admin duyệt.');
         }
 
         return redirect()
-            ->route('seller.register')
+            ->route('become-seller')
             ->with('success', 'Yêu cầu đã được gửi, vui lòng chờ Admin duyệt.');
     }
 }

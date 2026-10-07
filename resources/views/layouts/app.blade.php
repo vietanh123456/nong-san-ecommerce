@@ -67,6 +67,12 @@
                         >
                             Admin Panel
                         </a>
+                        <a
+                            href="{{ route('admin.seller-requests.index') }}"
+                            class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-full text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-white"
+                        >
+                            🌾 Duyệt người bán
+                        </a>
                     @endif
                 @endauth
 
@@ -151,6 +157,15 @@
                             >
                                 👤 {{ auth()->user()->name }}
                             </a>
+
+                            @if (auth()->user()->role === 'buyer')
+                                <a
+                                    href="{{ route('become-seller') }}"
+                                    class="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
+                                >
+                                    🌾 Trở thành người bán
+                                </a>
+                            @endif
 
                         @endif
 

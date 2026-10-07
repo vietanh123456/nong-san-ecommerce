@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Unit;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -17,15 +18,23 @@ use Throwable;
 
 class ProductController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+        ]);
+
         $products = Product::query()
             ->with(['category', 'variants.unit'])
             ->where('seller_id', Auth::id())
+            ->when($filters['search'] ?? null, function ($query, string $search): void {
+                $query->search($search);
+            })
             ->latest()
             ->paginate(10);
+        $products->withQueryString();
 
-        return view('seller.products.index', compact('products'));
+        return view('seller.products.index', compact('products', 'filters'));
     }
 
     public function create(): View

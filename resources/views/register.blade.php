@@ -21,7 +21,7 @@
                     MN
                 </div>
                 <span class="text-[11px] uppercase tracking-[0.2em] text-emerald-300 font-semibold block mb-3">TÀI KHOẢN MỚI</span>
-                <h1 class="text-4xl lg:text-[42px] font-serif font-semibold leading-[1.15]">Bắt đầu ăn lành,<br>sống xanh.</h1>
+                <h1 class="text-4xl lg:text-[42px] font-sans font-semibold leading-[1.15]">Bắt đầu ăn lành,<br>sống xanh.</h1>
                 <p class="mt-6 text-emerald-100/75 text-sm leading-relaxed max-w-[320px]">
                     Tạo tài khoản ngay để mua sắm nông sản tươi ngon và nhận ưu đãi riêng biệt từ các vùng miền.
                 </p>
@@ -37,7 +37,7 @@
 
         <!-- CỘT BÊN PHẢI: FORM ĐĂNG KÝ -->
         <div class="p-8 lg:p-12 flex flex-col justify-center bg-white">
-            <span class="text-[11px] uppercase tracking-[0.15em] text-gray-400 font-semibold block mb-1">THAM GIA CÙNG NHÓM</span>
+            <span class="text-[11px] uppercase tracking-[0.15em] text-gray-400 font-semibold block mb-1">ĐỒNG HÀNH CÙNG CHÚNG TÔI</span>
             <h2 class="text-3xl font-serif font-bold text-slate-900 mb-1">Đăng ký</h2>
             <p class="text-xs text-slate-400 mb-6">Tạo tài khoản chỉ trong vài giây.</p>
 

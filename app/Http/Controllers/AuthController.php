@@ -19,6 +19,9 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
+        // Định nghĩa $throttleKey để tránh lỗi Undefined variable $throttleKey
+        $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
+
         $credentials = $request->validate([
             'email' => [
                 'required',
@@ -109,8 +112,6 @@ class AuthController extends Controller
             'password' => $validated['password'],
             'role' => 'buyer',
         ]);
-
-        // Đã bỏ dòng Auth::login($user) để không tự động đăng nhập
 
         return redirect()
             ->route('login')

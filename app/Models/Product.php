@@ -49,7 +49,7 @@ class Product extends Model
         });
     }
 
-    private static function normalizeSearchText(string $text): string
+    public static function normalizeSearchText(string $text): string
     {
         return mb_strtolower(Str::ascii(trim($text)));
     }

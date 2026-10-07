@@ -57,4 +57,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Product::class, 'seller_id');
     }
+
+    public function sellerRequests(): HasMany
+    {
+        return $this->hasMany(SellerRequest::class);
+    }
+
+    public function latestSellerRequest(): HasOne
+    {
+        return $this->hasOne(SellerRequest::class)->latestOfMany();
+    }
 }

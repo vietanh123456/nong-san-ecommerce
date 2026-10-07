@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -32,7 +33,9 @@ class ProductPaginationTest extends TestCase
         foreach ([
             route('products.index', ['search' => 'Hat Dieu']),
             route('products.index', ['search' => 'HẠT ĐIỀU']),
+            route('products.index', ['search' => 'hẠt đIềU']),
             route('home', ['search' => 'hat dieu']),
+            route('home', ['search' => 'HẠT ĐIỀU']),
         ] as $url) {
             $response = $this->get($url);
 
@@ -45,6 +48,97 @@ class ProductPaginationTest extends TestCase
                 $response->viewData('products')->modelKeys()
             );
         }
+    }
+
+    public function test_hidden_products_are_excluded_from_home_and_search_results(): void
+    {
+        $category = Category::create([
+            'name' => 'Trái cây',
+            'slug' => 'trai-cay',
+            'description' => 'Danh mục kiểm thử.',
+            'status' => true,
+        ]);
+
+        $visibleProduct = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Sầu Riêng Vườn Nhà',
+            'description' => 'Sầu riêng chín tự nhiên.',
+            'price' => 85000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+
+        $hiddenProduct = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Sầu Riêng Đã Ẩn',
+            'description' => 'Sản phẩm bị ẩn.',
+            'price' => 75000,
+            'stock' => 10,
+            'status' => false,
+        ]);
+
+        foreach ([
+            route('home'),
+            route('home', ['search' => 'SẦU RIÊNG']),
+            route('products.index', ['search' => 'sầu riêng']),
+        ] as $url) {
+            $response = $this->get($url);
+
+            $response
+                ->assertOk()
+                ->assertSee($visibleProduct->name)
+                ->assertDontSee($hiddenProduct->name);
+
+            $this->assertSame(
+                [$visibleProduct->id],
+                $response->viewData('products')->modelKeys()
+            );
+        }
+    }
+
+    public function test_search_works_on_home_for_buyer_seller_and_admin_accounts(): void
+    {
+        $category = Category::create([
+            'name' => 'Trái cây',
+            'slug' => 'trai-cay',
+            'description' => 'Danh mục kiểm thử.',
+            'status' => true,
+        ]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Sầu Riêng Chín Cây',
+            'description' => 'Thu hoạch tại vườn.',
+            'price' => 95000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+
+        foreach (['buyer', 'seller', 'admin'] as $role) {
+            $account = User::factory()->create(['role' => $role]);
+
+            $this->actingAs($account)
+                ->get(route('home', ['search' => 'SẦU RIÊNG']))
+                ->assertOk()
+                ->assertSee($product->name);
+        }
+    }
+
+    public function test_seeded_products_have_search_data_when_model_events_are_disabled(): void
+    {
+        $this->seed();
+
+        $product = Product::query()
+            ->where('name', 'Hạt Điều Rang Salt')
+            ->firstOrFail();
+
+        $this->assertDatabaseHas('products', [
+            'id' => $product->id,
+            'search_name' => 'hat dieu rang salt',
+        ]);
+
+        $this->get(route('home', ['search' => 'HẠT ĐIỀU']))
+            ->assertOk()
+            ->assertSee('Hạt Điều Rang Salt');
     }
 
     public function test_product_listing_shows_eight_items_and_preserves_filters_in_pagination(): void

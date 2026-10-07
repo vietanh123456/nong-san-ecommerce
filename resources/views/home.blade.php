@@ -34,15 +34,21 @@
             <form
                 action="{{ route('home') }}"
                 method="GET"
-                class="w-full lg:flex-1 lg:max-w-md lg:mx-6"
+                class="w-full lg:flex-1 lg:max-w-md lg:mx-6 flex gap-2"
             >
                 <input
                     type="text"
                     name="search"
                     value="{{ request('search') }}"
                     placeholder="Tìm kiếm sản phẩm (Xoài, Bơ, Cam...)..."
-                    class="w-full px-4 py-2 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    class="min-w-0 flex-1 px-4 py-2 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 >
+                <button
+                    type="submit"
+                    class="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-white"
+                >
+                    Tìm
+                </button>
             </form>
 
             {{-- Menu --}}
@@ -69,6 +75,12 @@
                             class="text-sm font-medium text-emerald-100 hover:text-white hover:underline"
                         >
                             👤 {{ Auth::user()->name }}
+                        </a>
+                        <a
+                            href="{{ route('become-seller') }}"
+                            class="bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-white"
+                        >
+                            🌾 Trở thành người bán
                         </a>
                     @endif
                     <form action="{{ route('logout') }}" method="POST" class="inline">
