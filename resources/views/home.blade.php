@@ -11,6 +11,10 @@
     <title>Nông Sản Việt</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 </head>
 
 <body class="bg-gray-50 min-h-screen">
@@ -52,6 +56,22 @@
                         >
                             <span>🏪</span>
                             <span>Seller Dashboard</span>
+                        </a>
+                    @endif
+                    @if (auth()->user()->role === 'buyer')
+                        <a
+                            href="{{ route('seller.register') }}"
+                            class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition"
+                        >
+                            Đăng ký làm Người bán
+                        </a>
+                    @endif
+                    @if (auth()->user()->role === 'admin')
+                        <a
+                            href="{{ route('admin.dashboard') }}"
+                            class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition"
+                        >
+                            Quản trị
                         </a>
                     @endif
                 @endauth
@@ -229,22 +249,29 @@
                         </form>
 
                         @auth
-                            @if (auth()->user()->role === 'customer')
-                                <form
-                                    action="{{ route('wishlist.toggle', $product) }}"
-                                    method="POST"
-                                >
-                                    @csrf
+                            <form
+                                action="{{ route('wishlist.toggle', $product) }}"
+                                method="POST"
+                            >
+                                @csrf
 
-                                    <button
-                                        type="submit"
-                                        class="bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-lg transition"
-                                        title="Yêu thích"
-                                    >
-                                        ❤️
-                                    </button>
-                                </form>
-                            @endif
+                                <button
+                                    type="submit"
+                                    class="bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-lg transition"
+                                    title="Yêu thích"
+                                >
+                                    ❤️
+                                </button>
+                            </form>
+                        @else
+                            <a
+                                href="{{ route('login') }}"
+                                class="bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-lg transition"
+                                title="Đăng nhập để sử dụng yêu thích"
+                                aria-label="Đăng nhập để sử dụng yêu thích"
+                            >
+                                ❤️
+                            </a>
                         @endauth
                     </div>
                 </article>
@@ -254,6 +281,10 @@
                     <p>Không tìm thấy sản phẩm nào!</p>
                 </div>
             @endforelse
+        </div>
+
+        <div class="mt-8">
+            {{ $products->links('pagination::bootstrap-5') }}
         </div>
     </main>
 </body>

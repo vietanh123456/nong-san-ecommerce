@@ -30,7 +30,8 @@
             <h3 class="font-bold text-gray-800 text-lg">{{ Auth::user()->name ?? 'Người dùng' }}</h3>
             <p class="text-xs text-gray-500 mb-4">{{ Auth::user()->email ?? 'email@example.com' }}</p>
             <span class="inline-block bg-emerald-50 text-[#0e5c36] text-xs font-semibold px-3 py-1 rounded-full">
-                Khách hàng thân thiết
+            
+            
             </span>
         </div>
 

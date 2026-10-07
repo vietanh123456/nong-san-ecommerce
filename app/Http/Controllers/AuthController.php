@@ -28,7 +28,7 @@ class AuthController extends Controller
             ],
         ]);
 
-        if (!Auth::attempt(
+        if (! Auth::attempt(
             $credentials,
             $request->boolean('remember')
         )) {
@@ -84,7 +84,7 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'password' => $validated['password'],
-            'role' => 'customer',
+            'role' => 'buyer',
         ]);
 
         // Đã bỏ dòng Auth::login($user) để không tự động đăng nhập

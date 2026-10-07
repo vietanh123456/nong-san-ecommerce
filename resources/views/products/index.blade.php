@@ -118,11 +118,9 @@
             @endforeach
         </div>
 
-        @if (method_exists($products, 'links'))
-            <div class="mt-8">
-                {{ $products->links() }}
-            </div>
-        @endif
+        <div class="mt-8">
+            {{ $products->links('pagination::bootstrap-5') }}
+        </div>
     @else
         <div class="bg-white rounded-2xl p-12 text-center border border-gray-100 my-6">
             <div class="text-5xl mb-4">🔍</div>

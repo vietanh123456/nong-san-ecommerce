@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\SellerRequestController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ProductController as CustomerProductController;
@@ -7,6 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
+use App\Http\Controllers\SellerRegisterController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -22,18 +26,13 @@ Route::get('/', function (Request $request) {
     $query = Product::query();
 
     if ($request->filled('search')) {
-        $search = trim($request->input('search'));
-
-        $query->where(function ($query) use ($search): void {
-            $query
-                ->where('name', 'like', "%{$search}%")
-                ->orWhere('description', 'like', "%{$search}%");
-        });
+        $query->search($request->input('search'));
     }
 
     $products = $query
         ->latest()
-        ->get();
+        ->paginate(8)
+        ->withQueryString();
 
     return view('home', compact('products'));
 })->name('home');
@@ -138,7 +137,46 @@ Route::middleware('auth')->group(function (): void {
         '/products/{product}/reviews',
         [ReviewController::class, 'store']
     )->name('reviews.store');
+
+    Route::get('/seller/register', [SellerRegisterController::class, 'showForm'])
+        ->name('seller.register');
+
+    Route::post('/seller/register', [SellerRegisterController::class, 'submit'])
+        ->name('seller.register.submit');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Khu vực dành cho quản trị viên
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function (): void {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+            ->name('dashboard');
+
+        Route::get('/users', [AdminUserController::class, 'index'])
+            ->name('users.index');
+
+        Route::patch('/users/{user}/demote', [AdminUserController::class, 'demoteSeller'])
+            ->name('users.demote');
+
+        Route::get('/seller-requests', [SellerRequestController::class, 'index'])
+            ->name('seller-requests.index');
+
+        Route::patch(
+            '/seller-requests/{sellerRequest}/approve',
+            [SellerRequestController::class, 'approve']
+        )->name('seller-requests.approve');
+
+        Route::patch(
+            '/seller-requests/{sellerRequest}/reject',
+            [SellerRequestController::class, 'reject']
+        )->name('seller-requests.reject');
+    });
 
 /*
 |--------------------------------------------------------------------------

@@ -24,7 +24,7 @@ class SellerAccessTest extends TestCase
     public function test_customer_cannot_access_seller_dashboard(): void
     {
         $customer = User::factory()->create([
-            'role' => 'customer',
+            'role' => 'buyer',
         ]);
 
         $response = $this
@@ -37,7 +37,7 @@ class SellerAccessTest extends TestCase
     public function test_customer_cannot_access_seller_product_management(): void
     {
         $customer = User::factory()->create([
-            'role' => 'customer',
+            'role' => 'buyer',
         ]);
 
         $response = $this

@@ -20,15 +20,15 @@ class AuthTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('login'));
 
-        $this->assertAuthenticated();
+        $this->assertGuest();
 
         $this->assertDatabaseHas('users', [
             'name' => 'Nguyen Van A',
             'email' => 'a@example.com',
             'phone' => '0987654321',
-            'role' => 'customer',
+            'role' => 'buyer',
         ]);
     }
 
