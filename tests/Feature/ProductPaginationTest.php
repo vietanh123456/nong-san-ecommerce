@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -191,6 +192,97 @@ class ProductPaginationTest extends TestCase
 
         $secondPage->assertOk();
         $this->assertCount(1, $secondPage->viewData('products')->items());
+    }
+
+    public function test_product_filters_include_category_descendants_price_range_and_average_rating(): void
+    {
+        $parentCategory = Category::create([
+            'name' => 'Trái cây',
+            'slug' => 'trai-cay-bo-loc',
+            'status' => true,
+        ]);
+        $childCategory = Category::create([
+            'name' => 'Cam',
+            'slug' => 'cam-bo-loc',
+            'parent_id' => $parentCategory->id,
+            'status' => true,
+        ]);
+        $otherCategory = Category::create([
+            'name' => 'Rau củ',
+            'slug' => 'rau-cu-bo-loc',
+            'status' => true,
+        ]);
+
+        $matchingProduct = Product::create([
+            'category_id' => $childCategory->id,
+            'name' => 'Cam ngọt',
+            'price' => 60000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+        $lowRatedProduct = Product::create([
+            'category_id' => $childCategory->id,
+            'name' => 'Cam chua',
+            'price' => 70000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+        $outOfRangeProduct = Product::create([
+            'category_id' => $childCategory->id,
+            'name' => 'Cam đắt',
+            'price' => 120000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+        $wrongCategoryProduct = Product::create([
+            'category_id' => $otherCategory->id,
+            'name' => 'Rau sạch',
+            'price' => 60000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+        $reviewer = User::factory()->create();
+
+        foreach ([$matchingProduct, $outOfRangeProduct] as $product) {
+            foreach ([4, 5] as $rating) {
+                Review::create([
+                    'product_id' => $product->id,
+                    'user_id' => $reviewer->id,
+                    'rating' => $rating,
+                    'status' => Review::STATUS_APPROVED,
+                ]);
+            }
+        }
+
+        foreach ([3, 4] as $rating) {
+            Review::create([
+                'product_id' => $lowRatedProduct->id,
+                'user_id' => $reviewer->id,
+                'rating' => $rating,
+                'status' => Review::STATUS_APPROVED,
+            ]);
+        }
+
+        $response = $this->get(route('products.index', [
+            'categories' => [$parentCategory->id],
+            'min_price' => 50000,
+            'max_price' => 100000,
+            'rating' => 4,
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSee($matchingProduct->name)
+            ->assertDontSee($lowRatedProduct->name)
+            ->assertDontSee($outOfRangeProduct->name)
+            ->assertDontSee($wrongCategoryProduct->name)
+            ->assertSee('name="categories[]"', false)
+            ->assertSee($childCategory->name);
+
+        $this->assertSame(
+            [$matchingProduct->id],
+            $response->viewData('products')->modelKeys()
+        );
     }
 
     public function test_home_product_listing_shows_eight_items_and_preserves_search(): void
