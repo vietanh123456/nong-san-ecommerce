@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -28,10 +30,30 @@ class AuthController extends Controller
             ],
         ]);
 
+        $throttleKey = Str::transliterate(
+            Str::lower($credentials['email']).'|'.$request->ip()
+        );
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            return $this->loginTooManyAttemptsResponse(
+                $request,
+                RateLimiter::availableIn($throttleKey)
+            );
+        }
+
         if (! Auth::attempt(
             $credentials,
             $request->boolean('remember')
         )) {
+            RateLimiter::hit($throttleKey, 60);
+
+            if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+                return $this->loginTooManyAttemptsResponse(
+                    $request,
+                    RateLimiter::availableIn($throttleKey)
+                );
+            }
+
             return back()
                 ->withErrors([
                     'email' => 'Email hoặc mật khẩu không chính xác.',
@@ -39,11 +61,23 @@ class AuthController extends Controller
                 ->onlyInput('email');
         }
 
+        RateLimiter::clear($throttleKey);
         $request->session()->regenerate();
 
         return redirect()
             ->intended(route('home'))
             ->with('success', 'Đăng nhập thành công!');
+    }
+
+    private function loginTooManyAttemptsResponse(
+        Request $request,
+        int $seconds
+    ): RedirectResponse {
+        return back()
+            ->withErrors([
+                'email' => "Bạn đã đăng nhập sai quá 5 lần. Vui lòng thử lại sau {$seconds} giây.",
+            ])
+            ->onlyInput('email');
     }
 
     public function showRegister(): View

@@ -23,7 +23,7 @@
                     MN
                 </div>
                 <span class="text-[11px] uppercase tracking-[0.2em] text-emerald-300 font-semibold block mb-2">Sàn Nông Sản Việt</span>
-                <h1 class="text-4xl lg:text-[42px] font-serif font-semibold leading-[1.15]">Vị tươi lành từ lòng đất Việt</h1>
+                <h1 class="text-4xl lg:text-[42px] font-sans font-semibold leading-[1.15]">Chắt lọc vị lành, vẹn tròn sắc Việt</h1>
                 <p class="mt-6 text-emerald-100/75 text-sm leading-relaxed max-w-[320px]">
                     Kết nối bạn với những sản phẩm nông nghiệp tử tế, rõ nguồn gốc và được tuyển chọn từ các vùng quê Việt.
                 </p>
