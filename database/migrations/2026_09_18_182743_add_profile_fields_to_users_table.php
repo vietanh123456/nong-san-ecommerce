@@ -19,11 +19,11 @@ return new class extends Migration
                 ->after('phone');
 
             $table->enum('role', [
-                'customer',
+                'buyer',
                 'seller',
                 'admin',
             ])
-                ->default('customer')
+                ->default('buyer')
                 ->after('password');
         });
     }

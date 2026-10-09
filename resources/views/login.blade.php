@@ -23,7 +23,7 @@
                     MN
                 </div>
                 <span class="text-[11px] uppercase tracking-[0.2em] text-emerald-300 font-semibold block mb-2">Sàn Nông Sản Việt</span>
-                <h1 class="text-4xl lg:text-[42px] font-serif font-semibold leading-[1.15]">Vị tươi lành từ lòng đất Việt</h1>
+                <h1 class="text-4xl lg:text-[42px] font-sans font-semibold leading-[1.15]">Chắt lọc vị lành, vẹn tròn sắc Việt</h1>
                 <p class="mt-6 text-emerald-100/75 text-sm leading-relaxed max-w-[320px]">
                     Kết nối bạn với những sản phẩm nông nghiệp tử tế, rõ nguồn gốc và được tuyển chọn từ các vùng quê Việt.
                 </p>
@@ -51,13 +51,19 @@
                     <a href="{{ route('register') }}" class="pb-3 text-gray-400 hover:text-gray-600">Đăng ký</a>
                 </div>
 
+    <!-- Hiển thị thông báo thành công (sau khi Đăng ký / Đăng xuất) -->
+                @if (session('success'))
+                    <div class="mb-4 p-3 bg-emerald-50 border-l-4 border-emerald-500 text-emerald-700 text-xs rounded">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
                 <!-- Hiển thị lỗi nếu có -->
                 @if ($errors->any())
                     <div class="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs rounded">
                         {{ $errors->first() }}
                     </div>
                 @endif
-
                 <!-- FORM ĐĂNG NHẬP (ĐÃ CẬP NHẬT ROUTE CHUẨN) -->
                 <form action="{{ route('login') }}" method="POST" class="space-y-5">
                     @csrf

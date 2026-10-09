@@ -22,6 +22,29 @@ class ProfileController extends Controller
         return view('profile', compact('user', 'addresses'));
     }
 
+    /**
+     * Cập nhật thông tin tài khoản (Đổi tên)
+     */
+    public function update(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+        ]);
+
+        $user = Auth::user();
+        $user->update([
+            'name' => $validated['name'],
+        ]);
+
+        return redirect()
+            ->route('profile')
+            ->with('success', 'Cập nhật thông tin thành công!');
+    }
+
     public function storeAddress(Request $request): RedirectResponse
     {
         $validated = $request->validate([

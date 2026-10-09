@@ -103,6 +103,44 @@ class ProductTest extends TestCase
         Storage::disk('public')->assertExists($product->image);
     }
 
+    public function test_seller_can_search_only_their_own_products(): void
+    {
+        $seller = User::factory()->create(['role' => 'seller']);
+        $otherSeller = User::factory()->create(['role' => 'seller']);
+        $category = $this->createCategory();
+
+        $ownProduct = Product::create([
+            'seller_id' => $seller->id,
+            'category_id' => $category->id,
+            'name' => 'Sầu Riêng Nhà Vườn',
+            'description' => 'Trái cây chín cây.',
+            'price' => 90000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+        Product::create([
+            'seller_id' => $otherSeller->id,
+            'category_id' => $category->id,
+            'name' => 'Sầu Riêng Cửa Hàng Khác',
+            'description' => 'Không thuộc cửa hàng này.',
+            'price' => 85000,
+            'stock' => 5,
+            'status' => true,
+        ]);
+
+        $response = $this->actingAs($seller)
+            ->get(route('seller.products.index', ['search' => 'SẦU RIÊNG']));
+
+        $response
+            ->assertOk()
+            ->assertSee($ownProduct->name)
+            ->assertDontSee('Sầu Riêng Cửa Hàng Khác');
+        $this->assertSame(
+            [$ownProduct->id],
+            $response->viewData('products')->modelKeys()
+        );
+    }
+
     public function test_negative_price_and_stock_are_rejected(): void
     {
         $seller = User::factory()->create([

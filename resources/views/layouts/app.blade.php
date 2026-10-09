@@ -13,6 +13,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
         rel="stylesheet"
     >
@@ -38,7 +43,8 @@
                 href="{{ route('home') }}"
                 class="text-xl font-bold flex items-center gap-2 hover:opacity-90 transition"
             >
-                🌱 <span>Nông Sản Việt</span>
+                <span>🌱</span>
+                <span>Nông Sản Việt</span>
             </a>
 
             {{-- Menu bên phải --}}
@@ -47,7 +53,7 @@
                 {{-- Danh sách sản phẩm --}}
                 <a
                     href="{{ route('products.index') }}"
-                    class="hover:underline font-medium"
+                    class="inline-flex items-center px-3 py-2 rounded-lg hover:bg-white/10 font-medium transition"
                 >
                     Sản phẩm
                 </a>
@@ -61,6 +67,12 @@
                         >
                             Admin Panel
                         </a>
+                        <a
+                            href="{{ route('admin.seller-requests.index') }}"
+                            class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-full text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-white"
+                        >
+                            🌾 Duyệt người bán
+                        </a>
                     @endif
                 @endauth
 
@@ -68,7 +80,7 @@
                 @auth
                     <a
                         href="{{ route('wishlist.index') }}"
-                        class="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-white px-3 py-1.5 rounded-full text-sm font-medium transition"
+                        class="inline-flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-white px-3 py-2 rounded-full font-medium transition"
                     >
                         <span>❤️ Yêu thích</span>
 
@@ -81,7 +93,7 @@
                 {{-- Giỏ hàng --}}
                 <a
                     href="{{ route('cart.index') }}"
-                    class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full text-sm font-medium transition"
+                    class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-full font-medium transition"
                 >
                     <span>🛒 Giỏ hàng</span>
 
@@ -146,6 +158,15 @@
                                 👤 {{ auth()->user()->name }}
                             </a>
 
+                            @if (auth()->user()->role === 'buyer')
+                                <a
+                                    href="{{ route('become-seller') }}"
+                                    class="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
+                                >
+                                    🌾 Trở thành người bán
+                                </a>
+                            @endif
+
                         @endif
 
                         {{-- Đăng xuất --}}
@@ -158,7 +179,7 @@
 
                             <button
                                 type="submit"
-                                class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                                class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"
                             >
                                 Đăng xuất
                             </button>
