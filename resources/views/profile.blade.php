@@ -44,29 +44,61 @@
                     {{ session('success') }}
                 </div>
             @endif
+            @if(session('warning'))
+                <div class="bg-amber-100 border border-amber-400 text-amber-700 px-4 py-3 rounded-xl text-xs">
+                    {{ session('warning') }}
+                </div>
+            @endif
+            @if($errors->any())
+                <div class="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-xl text-xs">
+                    {{ $errors->first() }}
+                </div>
+            @endif
 
-            <!-- Form Đổi tên người dùng -->
+            <!-- Form cập nhật thông tin tài khoản -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <h4 class="font-bold text-gray-800 border-b pb-3 mb-4 flex items-center gap-2">
                     👤 <span>Thông tin tài khoản</span>
                 </h4>
                 
-                <form action="/profile" method="POST" class="space-y-4">
+                <form action="{{ route('profile.update') }}" method="POST" class="space-y-4">
                     @csrf
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">HỌ VÀ TÊN</label>
-                        <input type="text" name="name" value="{{ Auth::user()->name ?? '' }}" required
+                        <input type="text" name="name" value="{{ old('name', $user->name) }}" required maxlength="255"
                             class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0e5c36]">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">EMAIL (Không thể sửa)</label>
-                        <input type="email" value="{{ Auth::user()->email ?? '' }}" disabled
-                            class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">EMAIL</label>
+                        <input type="email" name="email" value="{{ old('email', $user->email) }}" required maxlength="255" autocomplete="email"
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0e5c36]">
+                        <p class="mt-1 text-[11px] text-gray-500">
+                            Khi đổi email, bạn cần nhập mật khẩu hiện tại và xác thực mã OTP gửi đến email mới.
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">MẬT KHẨU HIỆN TẠI (BẮT BUỘC KHI ĐỔI EMAIL)</label>
+                        <input type="password" name="current_password" autocomplete="current-password"
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0e5c36]">
                     </div>
                     <button type="submit" class="bg-[#0e5c36] hover:bg-[#0a4528] text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition">
                         Lưu thay đổi
                     </button>
                 </form>
+
+                @if ($user->pending_email)
+                    <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                        <p class="text-sm text-amber-900">
+                            Email <strong>{{ $user->pending_email }}</strong> đang chờ xác thực.
+                        </p>
+                        <a
+                            href="{{ route('profile.email.verify') }}"
+                            class="mt-2 inline-block text-xs font-bold text-emerald-800 underline"
+                        >
+                            Nhập mã OTP xác thực email
+                        </a>
+                    </div>
+                @endif
             </div>
 
             <!-- Khối Danh sách Địa chỉ nhận hàng -->

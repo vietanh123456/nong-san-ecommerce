@@ -142,7 +142,7 @@ class ProductPaginationTest extends TestCase
             ->assertSee('Hạt Điều Rang Salt');
     }
 
-    public function test_product_listing_shows_eight_items_and_preserves_filters_in_pagination(): void
+    public function test_product_listing_shows_twelve_items_and_preserves_filters_in_pagination(): void
     {
         $category = Category::create([
             'name' => 'Trái cây',
@@ -151,7 +151,7 @@ class ProductPaginationTest extends TestCase
             'status' => true,
         ]);
 
-        foreach (range(1, 9) as $number) {
+        foreach (range(1, 13) as $number) {
             Product::create([
                 'category_id' => $category->id,
                 'name' => "Cam Cao Phong {$number}",
@@ -175,8 +175,8 @@ class ProductPaginationTest extends TestCase
 
         $products = $response->viewData('products');
 
-        $this->assertCount(8, $products->items());
-        $this->assertSame(9, $products->total());
+        $this->assertCount(12, $products->items());
+        $this->assertSame(13, $products->total());
         $this->assertStringContainsString('page=2', $response->getContent());
         $this->assertStringContainsString('search=cam', $response->getContent());
         $this->assertStringContainsString(
@@ -283,9 +283,28 @@ class ProductPaginationTest extends TestCase
             [$matchingProduct->id],
             $response->viewData('products')->modelKeys()
         );
+
+        $homeResponse = $this->get(route('home', [
+            'categories' => [$parentCategory->id],
+            'min_price' => 50000,
+            'max_price' => 100000,
+            'rating' => 4,
+        ]));
+
+        $homeResponse
+            ->assertOk()
+            ->assertSee($matchingProduct->name)
+            ->assertDontSee($lowRatedProduct->name)
+            ->assertDontSee($outOfRangeProduct->name)
+            ->assertSee('name="categories[]"', false);
+
+        $this->assertSame(
+            [$matchingProduct->id],
+            $homeResponse->viewData('products')->modelKeys()
+        );
     }
 
-    public function test_home_product_listing_shows_eight_items_and_preserves_search(): void
+    public function test_home_product_listing_shows_twelve_items_and_preserves_search(): void
     {
         $category = Category::create([
             'name' => 'Trái cây',
@@ -294,7 +313,7 @@ class ProductPaginationTest extends TestCase
             'status' => true,
         ]);
 
-        foreach (range(1, 9) as $number) {
+        foreach (range(1, 13) as $number) {
             Product::create([
                 'category_id' => $category->id,
                 'name' => "Cam Cao Phong {$number}",
@@ -305,25 +324,48 @@ class ProductPaginationTest extends TestCase
             ]);
         }
 
-        $response = $this->get(route('home', ['search' => 'cam']));
+        $response = $this->get(route('home', [
+            'search' => 'cam',
+            'categories' => [$category->id],
+            'min_price' => 40000,
+            'max_price' => 50000,
+        ]));
 
         $response
             ->assertOk()
             ->assertSee('pagination', false)
             ->assertSee('page-item', false)
             ->assertSee('search=cam', false)
+            ->assertSee('categories%5B0%5D='.$category->id, false)
+            ->assertSee('min_price=40000', false)
+            ->assertSee('max_price=50000', false)
             ->assertSee('page=2', false)
             ->assertDontSee('Showing 1 to', false);
 
-        $this->assertCount(8, $response->viewData('products')->items());
-        $this->assertSame(9, $response->viewData('products')->total());
+        $this->assertCount(12, $response->viewData('products')->items());
+        $this->assertSame(13, $response->viewData('products')->total());
 
         $secondPage = $this->get(route('home', [
             'search' => 'cam',
+            'categories' => [$category->id],
+            'min_price' => 40000,
+            'max_price' => 50000,
             'page' => 2,
         ]));
 
         $secondPage->assertOk();
         $this->assertCount(1, $secondPage->viewData('products')->items());
+    }
+
+    public function test_empty_search_shows_keyword_and_clear_filters_link_on_both_listings(): void
+    {
+        foreach ([route('home'), route('products.index')] as $route) {
+            $this->get($route.'?search=khong-co-san-pham')
+                ->assertOk()
+                ->assertSee('value="khong-co-san-pham"', false)
+                ->assertSeeText('Không tìm thấy sản phẩm nào phù hợp với từ khóa')
+                ->assertSeeText('khong-co-san-pham')
+                ->assertSeeText('Xóa bộ lọc / Xem tất cả');
+        }
     }
 }

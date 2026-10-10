@@ -3,24 +3,6 @@
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     <form action="{{ route('products.index') }}" method="GET">
-        <div class="mb-6 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row">
-            <label class="sr-only" for="product-search">Tìm kiếm sản phẩm</label>
-            <input
-                id="product-search"
-                type="search"
-                name="search"
-                value="{{ request('search') }}"
-                placeholder="Tìm sản phẩm..."
-                class="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-            >
-            <button
-                type="submit"
-                class="rounded-xl bg-emerald-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
-            >
-                Tìm kiếm
-            </button>
-        </div>
-
         <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
             <aside class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                 <div class="mb-5 flex items-center justify-between">
@@ -51,7 +33,7 @@
                     <h2 class="mb-3 text-sm font-bold text-gray-800">Khoảng giá</h2>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label for="min-price" class="mb-1 block text-xs text-gray-500">Từ (đ)</label>
+                            <label for="min-price" class="mb-1 block text-xs text-gray-500">Từ (VND)</label>
                             <input
                                 id="min-price"
                                 type="number"
@@ -60,11 +42,11 @@
                                 step="1000"
                                 value="{{ request('min_price') }}"
                                 placeholder="0"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                                class="w-full rounded-lg border border-gray-200 px-1.5 py-2 text-xs focus:border-emerald-500 focus:outline-none"
                             >
                         </div>
                         <div>
-                            <label for="max-price" class="mb-1 block text-xs text-gray-500">Đến (đ)</label>
+                            <label for="max-price" class="mb-1 block text-xs text-gray-500">Đến (VND)</label>
                             <input
                                 id="max-price"
                                 type="number"
@@ -73,7 +55,7 @@
                                 step="1000"
                                 value="{{ request('max_price') }}"
                                 placeholder="Không giới hạn"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                                class="w-full rounded-lg border border-gray-200 px-1.5 py-2 text-xs focus:border-emerald-500 focus:outline-none"
                             >
                         </div>
                     </div>
@@ -116,6 +98,24 @@
             </aside>
 
             <main class="min-w-0">
+                <div class="mb-6 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row">
+                    <label class="sr-only" for="product-search">Tìm kiếm sản phẩm</label>
+                    <input
+                        id="product-search"
+                        type="search"
+                        name="search"
+                        value="{{ request('search') }}"
+                        placeholder="Tìm sản phẩm..."
+                        class="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                    >
+                    <button
+                        type="submit"
+                        class="rounded-xl bg-emerald-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
+                    >
+                        Tìm kiếm
+                    </button>
+                </div>
+
                 <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 class="text-xl font-bold text-gray-900">Sản phẩm nông sản</h2>
@@ -186,15 +186,27 @@
                     </div>
 
                     <div class="mt-8">
-                        {{ $products->links('pagination::bootstrap-5') }}
+                        {{ $products->appends(request()->query())->links('pagination::bootstrap-5') }}
                     </div>
                 @else
                     <div class="rounded-2xl border border-gray-100 bg-white px-6 py-14 text-center">
                         <div class="mb-4 text-5xl" aria-hidden="true">🔍</div>
-                        <h3 class="font-bold text-gray-800">Không tìm thấy sản phẩm nào</h3>
+                        <h3 class="font-bold text-gray-800">
+                            @if (request('search'))
+                                Không tìm thấy sản phẩm nào phù hợp với từ khóa '{{ request('search') }}'.
+                            @else
+                                Không tìm thấy sản phẩm nào phù hợp với bộ lọc hiện tại.
+                            @endif
+                        </h3>
                         <p class="mt-2 text-sm text-gray-500">
-                            Hãy thử thay đổi tiêu chí lọc hoặc xóa bộ lọc.
+                            Hãy thử thay đổi tiêu chí lọc hoặc xem tất cả sản phẩm.
                         </p>
+                        <a
+                            href="{{ route('products.index') }}"
+                            class="mt-5 inline-flex rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800"
+                        >
+                            Xóa bộ lọc / Xem tất cả
+                        </a>
                     </div>
                 @endif
             </main>

@@ -1,6 +1,7 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SellerRequestController;
 use App\Http\Controllers\Admin\StatisticsController as AdminStatisticsController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CertificateFileController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PasswordOtpController;
 use App\Http\Controllers\ProductController as CustomerProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
@@ -19,10 +21,7 @@ use App\Http\Controllers\Seller\ProductController as SellerProductController;
 use App\Http\Controllers\SellerRegisterController;
 use App\Http\Controllers\TraceController;
 use App\Http\Controllers\WishlistController;
-use App\Models\Product;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\CouponController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,21 +29,8 @@ use App\Http\Controllers\Admin\CouponController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function (Request $request) {
-    $query = Product::query()
-        ->where('status', true);
-
-    if ($request->filled('search')) {
-        $query->search($request->input('search'));
-    }
-
-    $products = $query
-        ->latest()
-        ->paginate(8)
-        ->withQueryString();
-
-    return view('home', compact('products'));
-})->name('home');
+Route::get('/', [CustomerProductController::class, 'index'])
+    ->name('home');
 
 /*
 |--------------------------------------------------------------------------
@@ -92,6 +78,26 @@ Route::middleware('guest')->group(function (): void {
 
     Route::post('/register', [AuthController::class, 'register'])
         ->name('register.store');
+
+    Route::get('/password/forgot', [
+        PasswordOtpController::class,
+        'showForgotPassword',
+    ])->name('password.request');
+
+    Route::post('/password/forgot', [
+        PasswordOtpController::class,
+        'sendPasswordResetOtp',
+    ])->name('password.otp.send');
+
+    Route::get('/password/reset-otp', [
+        PasswordOtpController::class,
+        'showResetPassword',
+    ])->name('password.otp.form');
+
+    Route::post('/password/reset-otp', [
+        PasswordOtpController::class,
+        'resetPassword',
+    ])->name('password.otp.reset');
 });
 
 /*
@@ -158,6 +164,21 @@ Route::middleware('auth')->group(function (): void {
     // === ĐÃ THÊM DÒNG NÀY ĐỂ XỬ LÝ ĐỔI TÊN ===
     Route::post('/profile', [ProfileController::class, 'update'])
         ->name('profile.update');
+
+    Route::get('/profile/verify-email', [
+        ProfileController::class,
+        'showVerifyEmail',
+    ])->name('profile.email.verify');
+
+    Route::post('/profile/verify-email', [
+        ProfileController::class,
+        'verifyEmail',
+    ])->name('profile.email.verify.submit');
+
+    Route::post('/profile/verify-email/resend', [
+        ProfileController::class,
+        'resendEmailOtp',
+    ])->name('profile.email.verify.resend');
 
     Route::post('/address/add', [
         ProfileController::class,

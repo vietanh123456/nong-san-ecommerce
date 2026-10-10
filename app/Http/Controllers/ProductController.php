@@ -110,13 +110,17 @@ class ProductController extends Controller
         }
 
         $products = $query
-            ->paginate(8)
-            ->withQueryString();
+            ->paginate(12)
+            ->appends($request->query());
 
-        return view(
-            'products.index',
-            compact('products', 'categoryTree', 'selectedCategoryIds')
-        );
+        $view = $request->routeIs('home') ? 'home' : 'products.index';
+
+        return view($view, compact(
+            'products',
+            'categories',
+            'categoryTree',
+            'selectedCategoryIds'
+        ));
     }
 
     public function show(int $id): View

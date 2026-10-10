@@ -77,7 +77,7 @@
                     <div>
                         <div class="flex justify-between items-center mb-2">
                             <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider">MẬT KHẨU</label>
-                            <a href="#" class="text-xs text-[#0e5c36] hover:underline font-semibold">Quên mật khẩu?</a>
+                            <a href="{{ route('password.request') }}" class="text-xs text-[#0e5c36] hover:underline font-semibold">Quên mật khẩu?</a>
                         </div>
                        <input type="password" name="password" required placeholder="••••••••" 
     class="w-full px-4 py-3.5 bg-slate-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0e5c36] focus:bg-white focus:outline-none transition">
