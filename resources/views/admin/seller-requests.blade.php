@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Duyệt yêu cầu Người bán')
 
-@section('content')
+@section('admin-content')
     <section class="max-w-6xl mx-auto px-4 py-10">
         <div class="mb-6">
             <p class="text-sm font-semibold text-emerald-700">QUẢN TRỊ</p>

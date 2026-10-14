@@ -118,10 +118,13 @@ class DashboardController extends Controller
         $products = Product::query()
             ->with(['seller', 'category'])
             ->when($filters['search'] ?? null, function ($query, string $search): void {
-                $query->where(function ($query) use ($search): void {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('origin', 'like', "%{$search}%")
-                        ->orWhereHas('seller', fn ($sellerQuery) => $sellerQuery->where('name', 'like', "%{$search}%"));
+                $term = '%'.mb_strtolower(trim($search)).'%';
+
+                $query->where(function ($query) use ($search, $term): void {
+                    $query->search($search)
+                        ->orWhereRaw('LOWER(origin) LIKE ?', [$term])
+                        ->orWhereHas('seller', fn ($sellerQuery) => $sellerQuery
+                            ->whereRaw('LOWER(name) LIKE ?', [$term]));
                 });
             })
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status === 'active'))

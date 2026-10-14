@@ -19,6 +19,9 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
+        // Định nghĩa $throttleKey để tránh lỗi Undefined variable $throttleKey
+        $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
+
         $credentials = $request->validate([
             'email' => [
                 'required',

@@ -22,7 +22,7 @@ class SellerRegistrationTest extends TestCase
 
         $response = $this
             ->actingAs($buyer)
-            ->post(route('seller.register.submit'), [
+            ->post(route('become-seller.submit'), [
                 'store_name' => 'Rau sạch nhà An',
                 'phone' => '0912345678',
                 'address' => 'Đà Lạt, Lâm Đồng',
@@ -30,7 +30,7 @@ class SellerRegistrationTest extends TestCase
             ]);
 
         $response
-            ->assertRedirect(route('seller.register'))
+            ->assertRedirect(route('become-seller'))
             ->assertSessionHas(
                 'success',
                 'Yêu cầu đã được gửi, vui lòng chờ Admin duyệt.'
@@ -59,9 +59,30 @@ class SellerRegistrationTest extends TestCase
 
         $this
             ->actingAs($buyer)
-            ->get(route('seller.register'))
+            ->get(route('become-seller'))
             ->assertOk()
             ->assertSee('Đăng ký Người bán');
+    }
+
+    public function test_buyer_sees_become_seller_link_in_navigation(): void
+    {
+        $buyer = User::factory()->create([
+            'role' => 'buyer',
+        ]);
+
+        $this
+            ->actingAs($buyer)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('🌾 Trở thành người bán')
+            ->assertSee(route('become-seller'));
+    }
+
+    public function test_guest_must_authenticate_before_opening_seller_registration(): void
+    {
+        $this
+            ->get(route('become-seller'))
+            ->assertRedirect(route('login'));
     }
 
     public function test_seller_application_requires_all_requested_fields(): void
@@ -72,7 +93,7 @@ class SellerRegistrationTest extends TestCase
 
         $this
             ->actingAs($buyer)
-            ->post(route('seller.register.submit'), [])
+            ->post(route('become-seller.submit'), [])
             ->assertSessionHasErrors([
                 'store_name',
                 'phone',
@@ -94,16 +115,50 @@ class SellerRegistrationTest extends TestCase
 
         $this
             ->actingAs($buyer)
-            ->post(route('seller.register.submit'), [
+            ->post(route('become-seller.submit'), [
                 'store_name' => 'Cửa hàng thứ hai',
                 'phone' => '0987654321',
                 'address' => 'Hà Nội',
                 'description' => 'Hồ sơ mới.',
             ])
-            ->assertRedirect(route('seller.register'))
+            ->assertRedirect(route('become-seller'))
             ->assertSessionHas('warning');
 
         $this->assertDatabaseCount('seller_requests', 1);
+    }
+
+    public function test_buyer_can_update_and_resubmit_a_rejected_application(): void
+    {
+        $buyer = User::factory()->create(['role' => 'buyer']);
+        $sellerRequest = SellerRequest::create([
+            'user_id' => $buyer->id,
+            'store_name' => 'Cửa hàng cũ',
+            'phone' => '0912345678',
+            'address' => 'Đà Lạt',
+            'description' => 'Thông tin cũ.',
+            'status' => 'rejected',
+        ]);
+
+        $this
+            ->actingAs($buyer)
+            ->post(route('become-seller.submit'), [
+                'store_name' => 'Cửa hàng mới',
+                'phone' => '0987654321',
+                'address' => 'Hà Nội',
+                'description' => 'Thông tin đã cập nhật.',
+            ])
+            ->assertRedirect(route('become-seller'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseCount('seller_requests', 1);
+        $this->assertDatabaseHas('seller_requests', [
+            'id' => $sellerRequest->id,
+            'store_name' => 'Cửa hàng mới',
+            'phone' => '0987654321',
+            'address' => 'Hà Nội',
+            'description' => 'Thông tin đã cập nhật.',
+            'status' => 'pending',
+        ]);
     }
 
     public function test_admin_can_approve_a_pending_seller_application(): void
@@ -136,6 +191,33 @@ class SellerRegistrationTest extends TestCase
             'id' => $sellerRequest->id,
             'status' => 'approved',
         ]);
+    }
+
+    public function test_admin_can_view_pending_seller_applications_and_approval_actions(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $applicant = User::factory()->create([
+            'name' => 'Người mua đăng ký bán',
+            'email' => 'applicant@example.com',
+            'role' => 'buyer',
+        ]);
+        $sellerRequest = SellerRequest::create([
+            'user_id' => $applicant->id,
+            'store_name' => 'Nông sản nhà vườn',
+            'phone' => '0912345678',
+            'address' => 'Đà Lạt',
+            'description' => 'Rau củ trồng tự nhiên.',
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.seller-requests.index'))
+            ->assertOk()
+            ->assertSee('Yêu cầu người bán')
+            ->assertSee('Nông sản nhà vườn')
+            ->assertSee('Người mua đăng ký bán')
+            ->assertSee(route('admin.seller-requests.approve', $sellerRequest))
+            ->assertSee(route('admin.seller-requests.reject', $sellerRequest));
     }
 
     public function test_admin_can_reject_a_pending_seller_application(): void

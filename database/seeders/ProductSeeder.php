@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class ProductSeeder extends Seeder
 {
@@ -54,13 +55,20 @@ class ProductSeeder extends Seeder
         ];
 
         foreach ($products as $item) {
-            Product::create([
+            $product = Product::create([
                 'category_id' => $category->id,
                 'name'        => $item['name'],
                 'description' => 'Sản phẩm ' . $item['name'] . ' đảm bảo chất lượng, tươi ngon và an toàn.',
                 'price'       => $item['price'],
                 'stock'       => rand(10, 100),
             ]);
+
+            DB::table('products')
+                ->where('id', $product->id)
+                ->update([
+                    'search_name' => Product::normalizeSearchText($product->name),
+                    'search_description' => Product::normalizeSearchText($product->description ?? ''),
+                ]);
         }
     }
 }

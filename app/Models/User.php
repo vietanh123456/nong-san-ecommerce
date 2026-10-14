@@ -17,6 +17,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'pending_email',
         'phone',
         'avatar',
         'password',
@@ -56,5 +57,15 @@ class User extends Authenticatable
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'seller_id');
+    }
+
+    public function sellerRequests(): HasMany
+    {
+        return $this->hasMany(SellerRequest::class);
+    }
+
+    public function latestSellerRequest(): HasOne
+    {
+        return $this->hasOne(SellerRequest::class)->latestOfMany();
     }
 }
