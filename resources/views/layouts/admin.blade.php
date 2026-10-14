@@ -30,6 +30,7 @@
             </div>
             <nav aria-label="Điều hướng quản trị" class="grid grid-cols-2 sm:flex gap-2">
                 <a class="admin-nav-link rounded-lg px-3 py-2 text-sm font-semibold text-center" href="{{ route('admin.users.index') }}" @if(request()->routeIs('admin.users.*')) aria-current="page" @endif>Tài khoản</a>
+                <a class="admin-nav-link rounded-lg px-3 py-2 text-sm font-semibold text-center" href="{{ route('admin.seller-requests.index') }}" @if(request()->routeIs('admin.seller-requests.*')) aria-current="page" @endif>Yêu cầu người bán</a>
                 <a class="admin-nav-link rounded-lg px-3 py-2 text-sm font-semibold text-center" href="{{ route('admin.products.index') }}" @if(request()->routeIs('admin.products.*')) aria-current="page" @endif>Sản phẩm</a>
                 <a class="admin-nav-link rounded-lg px-3 py-2 text-sm font-semibold text-center" href="{{ route('admin.certificates.index') }}" @if(request()->routeIs('admin.certificates.*')) aria-current="page" @endif>Chứng nhận</a>
                 <a class="admin-nav-link rounded-lg px-3 py-2 text-sm font-semibold text-center" href="{{ route('admin.reviews.index') }}" @if(request()->routeIs('admin.reviews.*')) aria-current="page" @endif>Đánh giá</a>

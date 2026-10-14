@@ -1,0 +1,10 @@
+[33m533e14b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix throttleKey missing and optimize rate limiting logic
+[33m81989cb[m Merge branch 'feature/seller-menu-polish'
+[33m9dc3001[m[33m ([m[1;31morigin/feature/seller-menu-polish[m[33m)[m fix: font-sans for login banner
+[33m0bdbe34[m feat: complete security auth jwt and fix search case-insensitive
+[33m97b16e1[m Update name display in header layout
+[33m632edaf[m check and update statitic
+[33m8737690[m[33m ([m[1;31morigin/person4[m[33m)[m Hoan thanh checkout COD VNPay order va seller revenue
+[33m6a43476[m add seller dashboard link to home navigation
+[33md00d316[m Merge main into person4
+[33m2babd22[m merge: traceability and admin dashboard

@@ -15,6 +15,25 @@
             </a>
         </div>
 
+        <form method="GET" action="{{ route('seller.products.index') }}" class="mb-5 flex flex-col gap-3 sm:flex-row">
+            <label class="sr-only" for="seller-product-search">Tìm sản phẩm của tôi</label>
+            <input
+                id="seller-product-search"
+                name="search"
+                type="search"
+                value="{{ $filters['search'] ?? '' }}"
+                placeholder="Tìm theo tên hoặc mô tả sản phẩm"
+            >
+            <button type="submit" class="btn shrink-0">
+                Tìm kiếm
+            </button>
+            @if (! empty($filters['search']))
+                <a href="{{ route('seller.products.index') }}" class="btn btn-secondary shrink-0">
+                    Xóa tìm kiếm
+                </a>
+            @endif
+        </form>
+
         <div class="table-wrapper">
             <table>
                 <thead>
