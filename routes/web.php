@@ -1,12 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\SellerRequestController;
 use App\Http\Controllers\Admin\StatisticsController as AdminStatisticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CertificateFileController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PasswordOtpController;
 use App\Http\Controllers\ProductController as CustomerProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
@@ -14,12 +18,10 @@ use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\OrderController as SellerOrderController;
 use App\Http\Controllers\Seller\ProductBatchController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
+use App\Http\Controllers\SellerRegisterController;
 use App\Http\Controllers\TraceController;
 use App\Http\Controllers\WishlistController;
-use App\Models\Product;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\CouponController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,25 +29,8 @@ use App\Http\Controllers\Admin\CouponController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function (Request $request) {
-    $query = Product::query();
-
-    if ($request->filled('search')) {
-        $search = trim($request->input('search'));
-
-        $query->where(function ($query) use ($search): void {
-            $query
-                ->where('name', 'like', "%{$search}%")
-                ->orWhere('description', 'like', "%{$search}%");
-        });
-    }
-
-    $products = $query
-        ->latest()
-        ->get();
-
-    return view('home', compact('products'));
-})->name('home');
+Route::get('/', [CustomerProductController::class, 'index'])
+    ->name('home');
 
 /*
 |--------------------------------------------------------------------------
@@ -93,6 +78,26 @@ Route::middleware('guest')->group(function (): void {
 
     Route::post('/register', [AuthController::class, 'register'])
         ->name('register.store');
+
+    Route::get('/password/forgot', [
+        PasswordOtpController::class,
+        'showForgotPassword',
+    ])->name('password.request');
+
+    Route::post('/password/forgot', [
+        PasswordOtpController::class,
+        'sendPasswordResetOtp',
+    ])->name('password.otp.send');
+
+    Route::get('/password/reset-otp', [
+        PasswordOtpController::class,
+        'showResetPassword',
+    ])->name('password.otp.form');
+
+    Route::post('/password/reset-otp', [
+        PasswordOtpController::class,
+        'resetPassword',
+    ])->name('password.otp.reset');
 });
 
 /*
@@ -137,6 +142,8 @@ Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])
 
 /*
 |--------------------------------------------------------------------------
+|/*
+|--------------------------------------------------------------------------
 | Chức năng yêu cầu đăng nhập
 |--------------------------------------------------------------------------
 */
@@ -145,8 +152,33 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
 
+    Route::get('/become-seller', [SellerRegisterController::class, 'showForm'])
+        ->name('become-seller');
+
+    Route::post('/become-seller', [SellerRegisterController::class, 'submit'])
+        ->name('become-seller.submit');
+
     Route::get('/profile', [ProfileController::class, 'index'])
         ->name('profile');
+
+    // === ĐÃ THÊM DÒNG NÀY ĐỂ XỬ LÝ ĐỔI TÊN ===
+    Route::post('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::get('/profile/verify-email', [
+        ProfileController::class,
+        'showVerifyEmail',
+    ])->name('profile.email.verify');
+
+    Route::post('/profile/verify-email', [
+        ProfileController::class,
+        'verifyEmail',
+    ])->name('profile.email.verify.submit');
+
+    Route::post('/profile/verify-email/resend', [
+        ProfileController::class,
+        'resendEmailOtp',
+    ])->name('profile.email.verify.resend');
 
     Route::post('/address/add', [
         ProfileController::class,
@@ -177,10 +209,91 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/orders/{order}', [OrderController::class, 'show'])
         ->name('orders.show');
 });
+/*
+|--------------------------------------------------------------------------
+| Khu vực dành cho quản trị viên (Admin)
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function (): void {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+            ->name('dashboard');
+
+        // Quản lý Users
+        Route::get('/users', [AdminUserController::class, 'index'])
+            ->name('users.index');
+
+        Route::patch('/users/{user}/demote', [AdminUserController::class, 'demote'])
+            ->name('users.demote');
+
+        Route::patch('/users/{user}/role', [
+            AdminDashboardController::class,
+            'updateUserRole',
+        ])->name('users.role');
+
+        Route::patch('/users/{user}/status', [
+            AdminDashboardController::class,
+            'toggleUserStatus',
+        ])->name('users.status');
+
+        // Quản lý Seller Requests
+        Route::get('/seller-requests', [SellerRequestController::class, 'index'])
+            ->name('seller-requests.index');
+
+        Route::patch('/seller-requests/{sellerRequest}/approve', [SellerRequestController::class, 'approve'])
+            ->name('seller-requests.approve');
+
+        Route::patch('/seller-requests/{sellerRequest}/reject', [SellerRequestController::class, 'reject'])
+            ->name('seller-requests.reject');
+
+        // Quản lý Products, Certificates, Reviews
+        Route::get('/products', [
+            AdminDashboardController::class,
+            'products',
+        ])->name('products.index');
+
+        Route::patch('/products/{product}/toggle', [
+            AdminDashboardController::class,
+            'toggleProduct',
+        ])->name('products.toggle');
+
+        Route::get('/certificates', [
+            AdminDashboardController::class,
+            'certificates',
+        ])->name('certificates.index');
+
+        Route::patch('/certificates/{certificate}', [
+            AdminDashboardController::class,
+            'reviewCertificate',
+        ])->name('certificates.review');
+
+        Route::get('/certificates/{certificate}/file', [
+            CertificateFileController::class,
+            'admin',
+        ])->name('certificates.file');
+
+        Route::get('/reviews', [
+            AdminDashboardController::class,
+            'reviews',
+        ])->name('reviews.index');
+
+        Route::patch('/reviews/{review}', [
+            AdminDashboardController::class,
+            'reviewReview',
+        ])->name('reviews.review');
+
+        Route::get('/statistics', [
+            AdminStatisticsController::class,
+            'index',
+        ])->name('statistics.index');
+    });
 
 /*
 |--------------------------------------------------------------------------
-| Khu vực dành cho người bán
+| Khu vực dành cho người bán (Seller)
 |--------------------------------------------------------------------------
 */
 
@@ -227,78 +340,7 @@ Route::middleware(['auth', 'seller'])
 
 /*
 |--------------------------------------------------------------------------
-| Khu vực Admin
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['auth', 'admin'])
-    ->prefix('admin')
-    ->name('admin.')
-    ->group(function (): void {
-        Route::get('/', [
-            AdminDashboardController::class,
-            'index',
-        ])->name('dashboard');
-
-        Route::get('/users', [
-            AdminDashboardController::class,
-            'users',
-        ])->name('users.index');
-
-        Route::patch('/users/{user}/role', [
-            AdminDashboardController::class,
-            'updateUserRole',
-        ])->name('users.role');
-
-        Route::patch('/users/{user}/status', [
-            AdminDashboardController::class,
-            'toggleUserStatus',
-        ])->name('users.status');
-
-        Route::get('/products', [
-            AdminDashboardController::class,
-            'products',
-        ])->name('products.index');
-
-        Route::patch('/products/{product}/toggle', [
-            AdminDashboardController::class,
-            'toggleProduct',
-        ])->name('products.toggle');
-
-        Route::get('/certificates', [
-            AdminDashboardController::class,
-            'certificates',
-        ])->name('certificates.index');
-
-        Route::patch('/certificates/{certificate}', [
-            AdminDashboardController::class,
-            'reviewCertificate',
-        ])->name('certificates.review');
-
-        Route::get('/certificates/{certificate}/file', [
-            CertificateFileController::class,
-            'admin',
-        ])->name('certificates.file');
-
-        Route::get('/reviews', [
-            AdminDashboardController::class,
-            'reviews',
-        ])->name('reviews.index');
-
-        Route::patch('/reviews/{review}', [
-            AdminDashboardController::class,
-            'reviewReview',
-        ])->name('reviews.review');
-
-        Route::get('/statistics', [
-            AdminStatisticsController::class,
-            'index',
-        ])->name('statistics.index');
-    });
-
-/*
-|--------------------------------------------------------------------------
-| API thống kê dành cho Admin (xác thực qua session đăng nhập hiện có)
+| API thống kê dành cho Admin
 |--------------------------------------------------------------------------
 */
 
@@ -323,10 +365,8 @@ Route::middleware(['auth', 'admin'])
 |--------------------------------------------------------------------------
 */
 
-Route::get(
-    '/vnpay/return',
-    [CheckoutController::class, 'vnpayReturn']
-)->name('vnpay.return');
+Route::get('/vnpay/return', [CheckoutController::class, 'vnpayReturn'])
+    ->name('vnpay.return');
 
 Route::get(
     '/vnpay/ipn',
@@ -343,3 +383,5 @@ Route::middleware(['auth'])
             CouponController::class
         )->except(['show']);
     });
+Route::get('/vnpay/ipn', [CheckoutController::class, 'vnpayIpn'])
+    ->name('vnpay.ipn');

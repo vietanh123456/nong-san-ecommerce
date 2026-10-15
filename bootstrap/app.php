@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', EnsureUserIsActive::class);
 
         $middleware->alias([
+            'admin' => EnsureUserIsAdmin::class,
             'seller' => EnsureUserIsSeller::class,
             'admin' => EnsureUserIsAdmin::class,
         ]);

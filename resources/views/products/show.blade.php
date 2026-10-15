@@ -135,6 +135,13 @@
                         ❤️ Thêm hoặc xóa khỏi yêu thích
                     </button>
                 </form>
+            @else
+                <a
+                    href="{{ route('login') }}"
+                    class="mt-3 block w-full rounded-xl border border-rose-200 py-3 px-6 text-center text-sm font-bold text-rose-600 transition hover:bg-rose-50"
+                >
+                    ❤️ Đăng nhập để thêm vào yêu thích
+                </a>
             @endauth
         </div>
     </div>
@@ -146,7 +153,7 @@
         </h2>
 
         @auth
-            @if (auth()->user()->role === 'customer')
+            @if (auth()->user()->role === 'buyer')
                 <form
                     action="{{ route('reviews.store', $product) }}"
                     method="POST"

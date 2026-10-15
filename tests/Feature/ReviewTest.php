@@ -21,7 +21,7 @@ class ReviewTest extends TestCase
         ]);
 
         $customer = User::factory()->create([
-            'role' => 'customer',
+            'role' => 'buyer',
         ]);
 
         $product = $this->createProduct($seller);
@@ -61,7 +61,7 @@ class ReviewTest extends TestCase
 
         $customer = User::factory()->create([
             'name' => 'Khách hàng kiểm thử',
-            'role' => 'customer',
+            'role' => 'buyer',
         ]);
 
         $product = $this->createProduct($seller);
@@ -91,7 +91,7 @@ class ReviewTest extends TestCase
         ]);
 
         $customer = User::factory()->create([
-            'role' => 'customer',
+            'role' => 'buyer',
         ]);
 
         $product = $this->createProduct($seller);
@@ -140,7 +140,7 @@ class ReviewTest extends TestCase
         ]);
 
         $customer = User::factory()->create([
-            'role' => 'customer',
+            'role' => 'buyer',
         ]);
 
         $product = $this->createProduct($seller);
