@@ -55,7 +55,8 @@
         ================================= --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
 
-            <table class="w-full text-left border-collapse">
+            <div class="overflow-x-auto">
+            <table class="w-full min-w-[640px] text-left border-collapse">
 
                 <thead>
                     <tr class="border-b text-gray-600 text-sm">
@@ -106,6 +107,11 @@
                             <td class="py-4 font-semibold text-gray-800">
 
                                 {{ $item['name'] ?? 'Sản phẩm' }}
+                                @if (!empty($item['availability_error']))
+                                    <p class="mt-1 text-xs font-normal text-red-600">
+                                        {{ $item['availability_error'] }}
+                                    </p>
+                                @endif
 
                             </td>
 
@@ -234,6 +240,7 @@
                 </tbody>
 
             </table>
+            </div>
 
             {{-- ================================
                 TỔNG TIỀN + CHECKOUT
@@ -271,12 +278,22 @@
                     {{-- ================================
                         NÚT THANH TOÁN
                     ================================= --}}
-                    <a
-                        href="{{ route('checkout.index') }}"
-                        class="inline-block mt-3 bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-emerald-700 transition"
-                    >
-                        Thanh toán
-                    </a>
+                    @if ($cartHasUnavailableProducts)
+                        <button
+                            type="button"
+                            disabled
+                            class="mt-3 inline-block cursor-not-allowed rounded-lg bg-gray-400 px-6 py-2.5 font-bold text-white"
+                        >
+                            Kiểm tra giỏ hàng
+                        </button>
+                    @else
+                        <a
+                            href="{{ route('checkout.index') }}"
+                            class="inline-block mt-3 bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-emerald-700 transition"
+                        >
+                            Thanh toán
+                        </a>
+                    @endif
 
                 </div>
 

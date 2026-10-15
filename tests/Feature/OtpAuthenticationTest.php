@@ -241,8 +241,7 @@ class OtpAuthenticationTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->post(route('profile.update'), [
-                'name' => 'Updated Name',
+            ->post(route('profile.email.request'), [
                 'email' => 'new@example.com',
                 'current_password' => 'incorrect-password',
             ])
@@ -252,15 +251,23 @@ class OtpAuthenticationTest extends TestCase
         Notification::assertNothingSent();
 
         $this->actingAs($user)
-            ->post(route('profile.update'), [
-                'name' => 'Updated Name',
+            ->post(route('profile.email.request'), [
                 'email' => 'new@example.com',
                 'current_password' => 'current-password-123',
             ])
-            ->assertRedirect(route('profile.email.verify'));
+            ->assertRedirect(route('profile'));
 
         $this->assertSame('old@example.com', $user->fresh()->email);
         $this->assertSame('new@example.com', $user->fresh()->pending_email);
+
+        $profile = $this->actingAs($user)->get(route('profile'));
+        $profile
+            ->assertOk()
+            ->assertSee('Email hiện tại')
+            ->assertSee('Email mới chờ xác thực')
+            ->assertSee('Email hiện tại vẫn được sử dụng cho đến khi xác thực email mới thành công.')
+            ->assertSee('new@example.com')
+            ->assertSee('id="otp-expiry-countdown"', false);
 
         $otp = null;
 
@@ -286,6 +293,284 @@ class OtpAuthenticationTest extends TestCase
         $this->assertSame('new@example.com', $user->fresh()->email);
         $this->assertNull($user->fresh()->pending_email);
         $this->assertNotNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_email_change_rejects_current_or_already_used_email_and_requires_password(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'old@example.com',
+            'password' => 'current-password-123',
+        ]);
+        User::factory()->create(['email' => 'taken@example.com']);
+
+        $this->actingAs($user)
+            ->from(route('profile'))
+            ->post(route('profile.email.request'), [
+                'email' => 'old@example.com',
+                'current_password' => 'current-password-123',
+            ])
+            ->assertSessionHasErrors('email');
+
+        $this->post(route('profile.email.request'), [
+            'email' => 'taken@example.com',
+            'current_password' => 'current-password-123',
+        ])->assertSessionHasErrors('email');
+
+        $this->post(route('profile.email.request'), [
+            'email' => 'new@example.com',
+            'current_password' => 'wrong-password',
+        ])->assertSessionHasErrors('current_password');
+
+        $this->assertSame('old@example.com', $user->fresh()->email);
+        $this->assertNull($user->fresh()->pending_email);
+        Notification::assertNothingSent();
+    }
+
+    public function test_profile_updates_personal_information_without_changing_email_and_keeps_email_form_collapsed(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Original Name',
+            'email' => 'old@example.com',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('profile'))
+            ->assertOk()
+            ->assertSee('Thông tin cá nhân')
+            ->assertSee('Đổi email')
+            ->assertSee('id="email-change-form"', false)
+            ->assertSee('id="show-email-change-form"', false)
+            ->assertSee('class="mt-4 space-y-4 hidden"', false);
+
+        $this->post(route('profile.update'), [
+            'name' => 'Updated Name',
+            'email' => 'ignored@example.com',
+        ])->assertRedirect(route('profile'));
+
+        $this->assertSame('Updated Name', $user->fresh()->name);
+        $this->assertSame('old@example.com', $user->fresh()->email);
+    }
+
+    public function test_resending_email_otp_invalidates_the_previous_code(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'old@example.com',
+            'password' => 'current-password-123',
+        ]);
+
+        $this->actingAs($user)->post(route('profile.email.request'), [
+            'email' => 'new@example.com',
+            'current_password' => 'current-password-123',
+        ])->assertRedirect(route('profile'));
+
+        $this->post(route('profile.email.verify.resend'))
+            ->assertRedirect(route('profile'));
+
+        $codes = [];
+        Notification::assertSentOnDemand(
+            OtpCodeNotification::class,
+            function (OtpCodeNotification $notification) use (&$codes): bool {
+                if ($notification->purpose !== 'email_change') {
+                    return false;
+                }
+
+                $codes[] = $notification->code;
+
+                return true;
+            }
+        );
+        $this->assertCount(2, $codes);
+        $this->assertNotSame($codes[0], $codes[1]);
+
+        $this->from(route('profile'))
+            ->post(route('profile.email.verify.submit'), ['otp' => $codes[0]])
+            ->assertSessionHasErrors('otp');
+        $this->post(route('profile.email.verify.submit'), ['otp' => $codes[1]])
+            ->assertRedirect(route('profile'));
+
+        $this->assertSame('new@example.com', $user->fresh()->email);
+    }
+
+    public function test_canceling_email_change_removes_pending_email_and_otp(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'old@example.com',
+            'password' => 'current-password-123',
+        ]);
+
+        $this->actingAs($user)->post(route('profile.email.request'), [
+            'email' => 'new@example.com',
+            'current_password' => 'current-password-123',
+        ]);
+
+        $this->delete(route('profile.email.cancel'))
+            ->assertRedirect(route('profile'));
+
+        $this->assertNull($user->fresh()->pending_email);
+        $this->assertNull(Cache::get('profile-email-otp:'.$user->getKey()));
+        $this->get(route('profile'))->assertDontSee('Email mới chờ xác thực');
+    }
+
+    public function test_expired_email_change_otp_is_reported_and_pending_email_remains_visible(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'old@example.com',
+            'password' => 'current-password-123',
+        ]);
+
+        $this->actingAs($user)->post(route('profile.email.request'), [
+            'email' => 'new@example.com',
+            'current_password' => 'current-password-123',
+        ]);
+
+        $this->travel(301)->seconds();
+
+        $this->from(route('profile'))
+            ->post(route('profile.email.verify.submit'), ['otp' => '123456'])
+            ->assertSessionHasErrors('otp');
+
+        $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee('Mã OTP đã hết hạn hoặc không còn hiệu lực.')
+            ->assertSee('new@example.com')
+            ->assertSee('Email hiện tại vẫn được sử dụng cho đến khi xác thực email mới thành công.');
+        $this->assertSame('old@example.com', $user->fresh()->email);
+    }
+
+    public function test_profile_otp_countdown_uses_remaining_seconds_after_reload(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'old@example.com',
+            'password' => 'current-password-123',
+        ]);
+
+        $this->actingAs($user)->post(route('profile.email.request'), [
+            'email' => 'new@example.com',
+            'current_password' => 'current-password-123',
+        ])->assertRedirect(route('profile'));
+
+        $firstPage = $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee('padStart(2,', false)
+            ->getContent();
+        preg_match('/id="otp-expiry-countdown"\s*data-seconds="(\d+)"/', $firstPage, $firstMatch);
+        $this->assertNotEmpty($firstMatch[1] ?? null);
+
+        $this->travel(75)->seconds();
+        $reloadedPage = $this->get(route('profile'))
+            ->assertOk()
+            ->getContent();
+        preg_match('/id="otp-expiry-countdown"\s*data-seconds="(\d+)"/', $reloadedPage, $reloadedMatch);
+
+        $this->assertLessThan((int) $firstMatch[1], (int) $reloadedMatch[1]);
+        $this->assertGreaterThan(0, (int) $reloadedMatch[1]);
+    }
+
+    public function test_email_otp_attempt_limit_is_reported_and_resending_unlocks_verification(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'old@example.com',
+            'password' => 'current-password-123',
+        ]);
+
+        $this->actingAs($user)->post(route('profile.email.request'), [
+            'email' => 'new@example.com',
+            'current_password' => 'current-password-123',
+        ]);
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $response = $this->from(route('profile'))
+                ->post(route('profile.email.verify.submit'), ['otp' => '123456']);
+        }
+
+        $response->assertSessionHasErrors([
+            'otp' => 'Bạn đã nhập sai quá 5 lần. Mã OTP đã bị khóa; vui lòng gửi lại mã.',
+        ]);
+
+        $this->post(route('profile.email.verify.resend'))
+            ->assertRedirect(route('profile'));
+        $codes = [];
+        Notification::assertSentOnDemand(
+            OtpCodeNotification::class,
+            function (OtpCodeNotification $notification) use (&$codes): bool {
+                if ($notification->purpose !== 'email_change') {
+                    return false;
+                }
+
+                $codes[] = $notification->code;
+
+                return true;
+            }
+        );
+        $this->assertCount(2, $codes);
+
+        $this->post(route('profile.email.verify.submit'), ['otp' => $codes[1]])
+            ->assertRedirect(route('profile'));
+        $this->assertSame('new@example.com', $user->fresh()->email);
+    }
+
+    public function test_email_otp_send_limit_is_shown_and_enforced_on_profile(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'old@example.com',
+            'password' => 'current-password-123',
+        ]);
+
+        $this->actingAs($user)->post(route('profile.email.request'), [
+            'email' => 'new@example.com',
+            'current_password' => 'current-password-123',
+        ]);
+        $this->post(route('profile.email.verify.resend'));
+        $this->post(route('profile.email.verify.resend'));
+
+        $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee('id="resend-countdown"', false)
+            ->assertSee('3 mã trong 5 phút')
+            ->assertSee('id="otp-expiry-countdown"', false);
+
+        $this->from(route('profile'))
+            ->post(route('profile.email.verify.resend'))
+            ->assertSessionHasErrors('email');
+    }
+
+    public function test_profile_address_add_and_delete_routes_still_work(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('address.store'), [
+                'recipient_name' => 'Nguyễn Văn A',
+                'phone' => '0900000000',
+                'address_detail' => '1 Đường X, Quận 1',
+                'is_default' => '1',
+            ])
+            ->assertRedirect(route('profile'));
+
+        $address = $user->addresses()->firstOrFail();
+        $this->assertDatabaseHas('addresses', [
+            'id' => $address->getKey(),
+            'user_id' => $user->getKey(),
+            'is_default' => true,
+        ]);
+
+        $this->delete(route('address.destroy', $address))
+            ->assertRedirect(route('profile'));
+        $this->assertDatabaseMissing('addresses', ['id' => $address->getKey()]);
     }
 
     public function test_expired_password_reset_otp_cannot_change_password(): void

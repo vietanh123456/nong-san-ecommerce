@@ -34,6 +34,24 @@ class CategorySeeder extends Seeder
                 'description' => 'Các sản phẩm mật ong tự nhiên',
                 'status' => true,
             ],
+            [
+                'name' => 'Hạt và quả khô',
+                'slug' => 'hat-va-qua-kho',
+                'description' => 'Các loại hạt và quả khô',
+                'status' => true,
+            ],
+            [
+                'name' => 'Cà phê và trà',
+                'slug' => 'ca-phe-va-tra',
+                'description' => 'Các sản phẩm cà phê và trà',
+                'status' => true,
+            ],
+            [
+                'name' => 'Nấm',
+                'slug' => 'nam',
+                'description' => 'Các loại nấm nông sản',
+                'status' => true,
+            ],
         ];
 
         foreach ($categories as $category) {

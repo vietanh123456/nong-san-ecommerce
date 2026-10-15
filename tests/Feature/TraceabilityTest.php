@@ -139,7 +139,7 @@ class TraceabilityTest extends TestCase
 
     public function test_only_admin_can_access_dashboard_and_approve_certificate(): void
     {
-        $customer = User::factory()->create(['role' => 'customer']);
+        $customer = User::factory()->create(['role' => 'buyer']);
         $admin = User::factory()->create(['role' => 'admin']);
         $seller = User::factory()->create(['role' => 'seller']);
         $certificate = ProductBatch::create([
@@ -166,7 +166,7 @@ class TraceabilityTest extends TestCase
     public function test_admin_can_hide_review_and_protect_last_admin_account(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $customer = User::factory()->create(['role' => 'customer']);
+        $customer = User::factory()->create(['role' => 'buyer']);
         $product = $this->productFor(User::factory()->create(['role' => 'seller']));
         $review = Review::create([
             'product_id' => $product->id,
@@ -189,7 +189,7 @@ class TraceabilityTest extends TestCase
             ->assertDontSee('Bình luận cần ẩn');
 
         $this->actingAs($admin)
-            ->patch(route('admin.users.role', $admin), ['role' => 'customer'])
+            ->patch(route('admin.users.role', $admin), ['role' => 'buyer'])
             ->assertSessionHas('error');
         $this->actingAs($admin)
             ->patch(route('admin.users.status', $admin))

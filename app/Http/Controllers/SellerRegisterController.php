@@ -13,7 +13,7 @@ class SellerRegisterController extends Controller
     {
         $user = $request->user();
 
-        if ($user->role !== 'buyer') {
+        if (! in_array($user->role, ['buyer', 'user'], true)) {
             return redirect()->route(
                 $user->role === 'seller' ? 'seller.dashboard' : 'admin.dashboard'
             );
@@ -28,7 +28,7 @@ class SellerRegisterController extends Controller
     {
         $user = $request->user();
 
-        if ($user->role !== 'buyer') {
+        if (! in_array($user->role, ['buyer', 'user'], true)) {
             return redirect()->route(
                 $user->role === 'seller' ? 'seller.dashboard' : 'admin.dashboard'
             );

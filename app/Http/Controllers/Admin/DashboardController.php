@@ -57,7 +57,7 @@ class DashboardController extends Controller
     {
         $filters = request()->validate([
             'search' => ['nullable', 'string', 'max:100'],
-            'role' => ['nullable', Rule::in(['customer', 'seller', 'admin'])],
+            'role' => ['nullable', Rule::in(['buyer', 'seller', 'admin'])],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
         ]);
         $users = User::query()
@@ -79,7 +79,7 @@ class DashboardController extends Controller
 
     public function updateUserRole(Request $request, User $user): RedirectResponse
     {
-        $data = $request->validate(['role' => ['required', Rule::in(['customer', 'seller', 'admin'])]]);
+        $data = $request->validate(['role' => ['required', Rule::in(['buyer', 'seller', 'admin'])]]);
 
         if ($user->is(auth()->user()) && $data['role'] !== 'admin') {
             return back()->with('error', 'Bạn không thể tự hạ quyền quản trị của mình.');

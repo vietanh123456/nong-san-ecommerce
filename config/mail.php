@@ -66,6 +66,16 @@ return [
             'transport' => 'resend',
         ],
 
+        'brevo' => [
+            'transport' => 'smtp',
+            'scheme' => 'smtp',
+            'require_tls' => true,
+            'host' => 'smtp-relay.brevo.com',
+            'port' => 587,
+            'username' => 'yen47575@gmail.com',
+            'password' => env('BREVO_KEY'),
+        ],
+
         'sendmail' => [
             'transport' => 'sendmail',
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),

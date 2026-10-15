@@ -7,6 +7,8 @@ use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ProductPaginationTest extends TestCase
@@ -137,9 +139,83 @@ class ProductPaginationTest extends TestCase
             'search_name' => 'hat dieu rang salt',
         ]);
 
+        $blackBeans = Product::query()
+            ->where('name', 'Đậu Đen Xanh Lòng')
+            ->firstOrFail();
+
+        $this->assertSame(
+            'gao-va-ngu-coc',
+            $blackBeans->category->slug
+        );
+
+        $this->assertSame(
+            'ca-phe-va-tra',
+            Product::query()
+                ->where('name', 'Cà Phê Moka Cầu Đất')
+                ->firstOrFail()
+                ->category
+                ->slug
+        );
+        $this->assertSame(
+            'nam',
+            Product::query()
+                ->where('name', 'Nấm Hương Khô Tây Bắc')
+                ->firstOrFail()
+                ->category
+                ->slug
+        );
+
+        $grains = Category::query()->where('slug', 'gao-va-ngu-coc')->firstOrFail();
+        $grainListing = $this->get(route('products.index', [
+            'category_id' => $grains->id,
+        ]));
+        $grainListing->assertOk()
+            ->assertSee('Gạo Tám Xoan Bắc Hương')
+            ->assertSee('Đậu Đen Xanh Lòng')
+            ->assertDontSee('Cam Sành Hà Giang');
+
+        $this->get(route('products.show', $blackBeans))
+            ->assertOk()
+            ->assertSee('Gạo và ngũ cốc');
+
         $this->get(route('home', ['search' => 'HẠT ĐIỀU']))
             ->assertOk()
             ->assertSee('Hạt Điều Rang Salt');
+    }
+
+    public function test_product_listings_use_product_images_or_a_neutral_fallback(): void
+    {
+        $category = Category::create([
+            'name' => 'Nông sản',
+            'slug' => 'nong-san-anh',
+            'status' => true,
+        ]);
+        $productWithoutImage = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Sản phẩm chưa có ảnh',
+            'price' => 25000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+        $productWithImage = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Sản phẩm có ảnh',
+            'price' => 30000,
+            'stock' => 10,
+            'image' => 'products/sample.jpg',
+            'status' => true,
+        ]);
+
+        foreach ([route('home'), route('products.index')] as $route) {
+            $response = $this->get($route);
+
+            $response
+                ->assertOk()
+                ->assertSee('Chưa có ảnh cho '.$productWithoutImage->name)
+                ->assertSee('/storage/products/sample.jpg', false)
+                ->assertSee('this.hidden = true; this.nextElementSibling.hidden = false;', false)
+                ->assertDontSee('🥑');
+        }
     }
 
     public function test_product_listing_shows_twelve_items_and_preserves_filters_in_pagination(): void
@@ -192,6 +268,228 @@ class ProductPaginationTest extends TestCase
 
         $secondPage->assertOk();
         $this->assertCount(1, $secondPage->viewData('products')->items());
+    }
+
+    public function test_product_search_preserves_filters_without_nested_forms(): void
+    {
+        $category = Category::create([
+            'name' => 'Nông sản',
+            'slug' => 'nong-san-search-preserve',
+            'status' => true,
+        ]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Sản phẩm giá thấp',
+            'description' => 'Hàng phù hợp tìm kiếm.',
+            'price' => 0,
+            'stock' => 10,
+            'status' => true,
+        ]);
+
+        $response = $this->get(route('products.index', [
+            'search' => 'giá thấp',
+            'category_id' => $category->id,
+            'min_price' => 0,
+            'max_price' => 0,
+            'rating' => 1,
+            'sort' => 'price_asc',
+            'page' => 3,
+        ]));
+
+        $response->assertOk()
+            ->assertSee('0 sản phẩm', false)
+            ->assertSee('id="product-search"', false)
+            ->assertSee('name="min_price" value="0"', false)
+            ->assertSee('name="max_price" value="0"', false)
+            ->assertSee('name="rating" value="1"', false)
+            ->assertSee('name="category_id" value="'.$category->id.'"', false)
+            ->assertDontSee('name="page"', false);
+        $this->assertStringNotContainsString(
+            $product->name,
+            $response->getContent()
+        );
+
+        preg_match_all('/<form\b[^>]*>|<\/form>/i', $response->getContent(), $formTags);
+        $openForms = 0;
+        $hasNestedForms = false;
+
+        foreach ($formTags[0] as $formTag) {
+            if (str_starts_with(strtolower($formTag), '</form')) {
+                $openForms--;
+            } else {
+                $hasNestedForms = $hasNestedForms || $openForms > 0;
+                $openForms++;
+            }
+        }
+
+        $this->assertFalse($hasNestedForms);
+
+        $matchedResponse = $this->get(route('products.index', [
+            'search' => 'giá thấp',
+            'category_id' => $category->id,
+            'min_price' => 0,
+            'max_price' => 0,
+        ]));
+        $matchedResponse->assertOk()
+            ->assertSee('1 sản phẩm', false)
+            ->assertSee('name="min_price" value="0"', false)
+            ->assertSee('name="max_price" value="0"', false);
+        $this->assertSame(
+            [$product->id],
+            $matchedResponse->viewData('products')->modelKeys()
+        );
+    }
+
+    public function test_product_price_filters_accept_zero_and_single_bounds_and_reject_invalid_ranges(): void
+    {
+        $category = Category::create([
+            'name' => 'Nông sản giá',
+            'slug' => 'nong-san-gia',
+            'status' => true,
+        ]);
+        $freeProduct = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Giá bằng không',
+            'price' => 0,
+            'stock' => 10,
+            'status' => true,
+        ]);
+        $midPriceProduct = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Giá trung bình',
+            'price' => 50000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+
+        $zeroPrice = $this->get(route('products.index', ['max_price' => 0]));
+        $this->assertSame([$freeProduct->id], $zeroPrice->viewData('products')->modelKeys());
+
+        $minimumOnly = $this->get(route('products.index', ['min_price' => 50000]));
+        $this->assertSame([$midPriceProduct->id], $minimumOnly->viewData('products')->modelKeys());
+
+        $maximumOnly = $this->get(route('products.index', ['max_price' => 0]));
+        $this->assertSame([$freeProduct->id], $maximumOnly->viewData('products')->modelKeys());
+
+        $this->getJson(route('products.index', ['min_price' => -1]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('min_price');
+        $this->getJson(route('products.index', ['max_price' => '50.000']))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('max_price');
+        $this->getJson(route('products.index', [
+            'min_price' => 50000,
+            'max_price' => 10000,
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('max_price');
+    }
+
+    public function test_product_sort_options_apply_before_pagination_and_preserve_filters(): void
+    {
+        $category = Category::create([
+            'name' => 'Nông sản sắp xếp',
+            'slug' => 'nong-san-sap-xep',
+            'status' => true,
+        ]);
+        $products = collect();
+        $baseDate = Carbon::parse('2026-01-01 12:00:00');
+
+        foreach (range(1, 13) as $number) {
+            $product = Product::create([
+                'category_id' => $category->id,
+                'name' => "Sort Produce {$number}",
+                'description' => 'Dùng kiểm tra thứ tự sản phẩm.',
+                'price' => 10000 + (intdiv($number - 1, 2) * 1000),
+                'stock' => 10,
+                'status' => true,
+            ]);
+            $createdAt = $baseDate->copy()->addDays(intdiv($number - 1, 2));
+
+            DB::table('products')
+                ->where('id', $product->id)
+                ->update([
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
+                ]);
+
+            $products->push([
+                'id' => $product->id,
+                'price' => (int) $product->price,
+                'created_at' => $createdAt,
+            ]);
+        }
+
+        $filters = [
+            'search' => 'Sort Produce',
+            'category_id' => $category->id,
+            'min_price' => 10000,
+            'max_price' => 20000,
+        ];
+        $sortOrders = [
+            'newest' => fn (array $left, array $right): int => $right['created_at']->getTimestamp() <=> $left['created_at']->getTimestamp()
+                    ?: $right['id'] <=> $left['id'],
+            'price_asc' => fn (array $left, array $right): int => $left['price'] <=> $right['price']
+                    ?: $right['id'] <=> $left['id'],
+            'price_desc' => fn (array $left, array $right): int => $right['price'] <=> $left['price']
+                    ?: $right['id'] <=> $left['id'],
+        ];
+        $priceAscendingIds = [];
+
+        foreach ($sortOrders as $sort => $compare) {
+            $expected = $products->all();
+            usort($expected, $compare);
+            if ($sort === 'price_asc') {
+                $priceAscendingIds = array_column($expected, 'id');
+            }
+
+            $response = $this->get(route('products.index', $filters + ['sort' => $sort]));
+
+            $response
+                ->assertOk()
+                ->assertSee('id="product-sort-form"', false)
+                ->assertSee('onchange="this.form.submit()"', false)
+                ->assertSee('value="'.$sort.'" selected', false)
+                ->assertSee('search=Sort%20Produce', false)
+                ->assertSee('category_id='.$category->id, false)
+                ->assertSee('min_price=10000', false)
+                ->assertSee('max_price=20000', false)
+                ->assertSee('sort='.$sort, false)
+                ->assertSee('page=2', false)
+                ->assertDontSee('name="page"', false);
+
+            $pageOneIds = $response->viewData('products')->modelKeys();
+            $this->assertSame(
+                array_column(array_slice($expected, 0, 12), 'id'),
+                $pageOneIds
+            );
+            $this->assertSame(13, $response->viewData('products')->total());
+
+            $secondPage = $this->get(route('products.index', $filters + [
+                'sort' => $sort,
+                'page' => 2,
+            ]));
+
+            $secondPage->assertOk();
+            $this->assertSame(
+                [array_column($expected, 'id')[12]],
+                $secondPage->viewData('products')->modelKeys()
+            );
+        }
+
+        $this->getJson(route('products.index', $filters + ['sort' => 'price;drop']))
+            ->assertUnprocessable();
+        $this->get(route('home', $filters + ['sort' => 'price_asc']))
+            ->assertOk()
+            ->assertSee('id="home-product-sort-form"', false)
+            ->assertSee('value="price_asc" selected', false);
+
+        $this->assertSame(
+            array_slice($priceAscendingIds, 0, 12),
+            $this->get(route('home', $filters + ['sort' => 'price_asc']))
+                ->viewData('products')
+                ->modelKeys()
+        );
     }
 
     public function test_product_filters_include_category_descendants_price_range_and_average_rating(): void

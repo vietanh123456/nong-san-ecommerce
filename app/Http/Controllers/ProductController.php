@@ -18,10 +18,15 @@ class ProductController extends Controller
             'categories' => ['sometimes', 'array'],
             'categories.*' => ['integer', 'exists:categories,id'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
-            'min_price' => ['nullable', 'numeric', 'min:0'],
-            'max_price' => ['nullable', 'numeric', 'min:0'],
+            'min_price' => ['nullable', 'numeric', 'min:0', 'regex:/\A[0-9]+\z/'],
+            'max_price' => ['nullable', 'numeric', 'min:0', 'regex:/\A[0-9]+\z/'],
             'rating' => ['nullable', 'integer', 'between:1,5'],
-            'sort' => ['nullable', 'in:price_asc,price_desc'],
+            'sort' => ['nullable', 'in:newest,price_asc,price_desc'],
+        ], [
+            'min_price.min' => 'Giá tối thiểu không thể âm.',
+            'min_price.regex' => 'Nhập giá tối thiểu bằng VND liền, không dùng dấu chấm hoặc phẩy.',
+            'max_price.min' => 'Giá tối đa không thể âm.',
+            'max_price.regex' => 'Nhập giá tối đa bằng VND liền, không dùng dấu chấm hoặc phẩy.',
         ]);
 
         if (
@@ -101,12 +106,17 @@ class ProductController extends Controller
             );
         }
 
-        if (($filters['sort'] ?? null) === 'price_asc') {
-            $query->orderBy('price');
-        } elseif (($filters['sort'] ?? null) === 'price_desc') {
-            $query->orderByDesc('price');
-        } else {
-            $query->latest();
+        switch ($filters['sort'] ?? 'newest') {
+            case 'price_asc':
+                $query->orderBy('price')->orderByDesc('id');
+                break;
+
+            case 'price_desc':
+                $query->orderByDesc('price')->orderByDesc('id');
+                break;
+
+            default:
+                $query->orderByDesc('created_at')->orderByDesc('id');
         }
 
         $products = $query

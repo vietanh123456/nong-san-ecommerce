@@ -11,7 +11,7 @@ class EnsureUserIsAdmin
     public function handle(Request $request, Closure $next): Response
     {
         abort_unless(
-            $request->user()?->role === 'admin',
+            in_array($request->user()?->role, ['admin', 'super_admin'], true),
             403,
             'Bạn không có quyền truy cập khu vực quản trị.'
         );

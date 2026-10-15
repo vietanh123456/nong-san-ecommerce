@@ -24,7 +24,7 @@ class StatisticsTest extends TestCase
 
     public function test_customer_cannot_access_revenue_statistics(): void
     {
-        $customer = User::factory()->create(['role' => 'customer']);
+        $customer = User::factory()->create(['role' => 'buyer']);
 
         $response = $this
             ->actingAs($customer)
@@ -36,7 +36,7 @@ class StatisticsTest extends TestCase
     public function test_admin_can_view_revenue_statistics_excluding_cancelled_orders(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $customer = User::factory()->create(['role' => 'customer']);
+        $customer = User::factory()->create(['role' => 'buyer']);
         $seller = User::factory()->create(['role' => 'seller']);
         $product = $this->createProduct($seller);
 
@@ -69,7 +69,7 @@ class StatisticsTest extends TestCase
     public function test_admin_can_filter_revenue_by_custom_date_range(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $customer = User::factory()->create(['role' => 'customer']);
+        $customer = User::factory()->create(['role' => 'buyer']);
         $seller = User::factory()->create(['role' => 'seller']);
         $product = $this->createProduct($seller);
 
@@ -109,7 +109,7 @@ class StatisticsTest extends TestCase
 
     public function test_customer_cannot_access_statistics_page(): void
     {
-        $customer = User::factory()->create(['role' => 'customer']);
+        $customer = User::factory()->create(['role' => 'buyer']);
 
         $response = $this
             ->actingAs($customer)
@@ -121,7 +121,7 @@ class StatisticsTest extends TestCase
     public function test_admin_can_view_statistics_page_with_revenue_and_top_products(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $customer = User::factory()->create(['role' => 'customer']);
+        $customer = User::factory()->create(['role' => 'buyer']);
         $seller = User::factory()->create(['role' => 'seller']);
         $product = $this->createProduct($seller, 'Xoài Cát');
 
@@ -142,7 +142,7 @@ class StatisticsTest extends TestCase
     public function test_admin_can_filter_statistics_page_by_custom_date_range(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $customer = User::factory()->create(['role' => 'customer']);
+        $customer = User::factory()->create(['role' => 'buyer']);
         $seller = User::factory()->create(['role' => 'seller']);
         $product = $this->createProduct($seller);
 
@@ -176,8 +176,9 @@ class StatisticsTest extends TestCase
     public function test_admin_can_view_overview_statistics(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $customer1 = User::factory()->create(['role' => 'customer']);
-        $customer2 = User::factory()->create(['role' => 'customer']);
+        $customer1 = User::factory()->create(['role' => 'buyer']);
+        $customer2 = User::factory()->create(['role' => 'buyer']);
+        User::factory()->create(['role' => 'user']);
         $seller = User::factory()->create(['role' => 'seller']);
 
         $productA = $this->createProduct($seller, 'Xoài Cát');
@@ -197,7 +198,7 @@ class StatisticsTest extends TestCase
         $response->assertJsonPath('data.orders_by_status.completed', 2);
         $response->assertJsonPath('data.orders_by_status.pending', 1);
         $response->assertJsonPath('data.orders_by_status.cancelled', 1);
-        $response->assertJsonPath('data.total_customers', 2);
+        $response->assertJsonPath('data.total_customers', 3);
         $response->assertJsonPath('data.top_products_by_revenue.0.product_name', 'Xoài Cát');
         $response->assertJsonPath('data.top_products_by_quantity.0.product_name', 'Xoài Cát');
     }

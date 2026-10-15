@@ -33,6 +33,13 @@ class CheckoutController extends Controller
                 ]);
         }
 
+        if ($cartError = $this->cartAvailabilityError($cart)) {
+            return redirect()
+                ->route('cart.index')
+                ->withErrors(['cart' => $cartError]);
+        }
+
+        $cart = $this->refreshCartSnapshot($cart);
         $subtotal = $this->calculateSubtotal($cart);
 
         $addresses = collect();
@@ -46,7 +53,7 @@ class CheckoutController extends Controller
         $shippingZones = ShippingZone::with([
             'shippingFees' => function ($query) {
                 $query->where('status', true);
-            }
+            },
         ])
             ->where('status', true)
             ->get();
@@ -115,6 +122,12 @@ class CheckoutController extends Controller
                 ]);
         }
 
+        if ($cartError = $this->cartAvailabilityError($cart)) {
+            return redirect()
+                ->route('cart.index')
+                ->withErrors(['cart' => $cartError]);
+        }
+
         $subtotal = $this->calculateSubtotal($cart);
 
         $code = strtoupper(
@@ -126,21 +139,19 @@ class CheckoutController extends Controller
             [$code]
         )->first();
 
-        if (!$coupon) {
+        if (! $coupon) {
             return back()
                 ->withInput()
                 ->withErrors([
-                    'coupon_code' =>
-                        'Mã giảm giá không tồn tại.',
+                    'coupon_code' => 'Mã giảm giá không tồn tại.',
                 ]);
         }
 
-        if (!$coupon->status) {
+        if (! $coupon->status) {
             return back()
                 ->withInput()
                 ->withErrors([
-                    'coupon_code' =>
-                        'Mã giảm giá đã bị vô hiệu hóa.',
+                    'coupon_code' => 'Mã giảm giá đã bị vô hiệu hóa.',
                 ]);
         }
 
@@ -153,8 +164,7 @@ class CheckoutController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'coupon_code' =>
-                        'Mã giảm giá chưa đến thời gian sử dụng.',
+                    'coupon_code' => 'Mã giảm giá chưa đến thời gian sử dụng.',
                 ]);
         }
 
@@ -165,8 +175,7 @@ class CheckoutController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'coupon_code' =>
-                        'Mã giảm giá đã hết hạn.',
+                    'coupon_code' => 'Mã giảm giá đã hết hạn.',
                 ]);
         }
 
@@ -177,8 +186,7 @@ class CheckoutController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'coupon_code' =>
-                        'Mã giảm giá đã hết lượt sử dụng.',
+                    'coupon_code' => 'Mã giảm giá đã hết lượt sử dụng.',
                 ]);
         }
 
@@ -189,15 +197,14 @@ class CheckoutController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'coupon_code' =>
-                        'Đơn hàng chưa đạt giá trị tối thiểu '
-                        . number_format(
+                    'coupon_code' => 'Đơn hàng chưa đạt giá trị tối thiểu '
+                        .number_format(
                             (float) $coupon->min_order,
                             0,
                             ',',
                             '.'
                         )
-                        . 'đ.',
+                        .'đ.',
                 ]);
         }
 
@@ -236,12 +243,11 @@ class CheckoutController extends Controller
 
     public function placeOrder(Request $request): RedirectResponse
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()
                 ->route('login')
                 ->withErrors([
-                    'login' =>
-                        'Bạn cần đăng nhập để đặt hàng.',
+                    'login' => 'Bạn cần đăng nhập để đặt hàng.',
                 ]);
         }
 
@@ -280,6 +286,12 @@ class CheckoutController extends Controller
                 ]);
         }
 
+        if ($cartError = $this->cartAvailabilityError($cart)) {
+            return redirect()
+                ->route('cart.index')
+                ->withErrors(['cart' => $cartError]);
+        }
+
         /*
         |--------------------------------------------------------------------------
         | ADDRESS
@@ -296,12 +308,11 @@ class CheckoutController extends Controller
             )
             ->first();
 
-        if (!$address) {
+        if (! $address) {
             return back()
                 ->withInput()
                 ->withErrors([
-                    'address_id' =>
-                        'Địa chỉ nhận hàng không hợp lệ.',
+                    'address_id' => 'Địa chỉ nhận hàng không hợp lệ.',
                 ]);
         }
 
@@ -314,7 +325,7 @@ class CheckoutController extends Controller
         $shippingZone = ShippingZone::with([
             'shippingFees' => function ($query) {
                 $query->where('status', true);
-            }
+            },
         ])
             ->where(
                 'id',
@@ -323,24 +334,22 @@ class CheckoutController extends Controller
             ->where('status', true)
             ->first();
 
-        if (!$shippingZone) {
+        if (! $shippingZone) {
             return back()
                 ->withInput()
                 ->withErrors([
-                    'shipping_zone_id' =>
-                        'Vùng vận chuyển không hợp lệ.',
+                    'shipping_zone_id' => 'Vùng vận chuyển không hợp lệ.',
                 ]);
         }
 
         $shippingFeeModel =
             $shippingZone->shippingFees->first();
 
-        if (!$shippingFeeModel) {
+        if (! $shippingFeeModel) {
             return back()
                 ->withInput()
                 ->withErrors([
-                    'shipping_zone_id' =>
-                        'Vùng vận chuyển chưa có phí.',
+                    'shipping_zone_id' => 'Vùng vận chuyển chưa có phí.',
                 ]);
         }
 
@@ -356,30 +365,29 @@ class CheckoutController extends Controller
         $subtotal = 0;
 
         foreach ($cart as $productId => $item) {
-            $product = Product::find($productId);
+            $product = Product::query()->find($productId);
 
-            if (!$product) {
+            if (! $product || ! $product->status) {
                 return back()->withErrors([
-                    'order' =>
-                        'Có sản phẩm không còn tồn tại.',
+                    'order' => 'Có sản phẩm không còn khả dụng.',
                 ]);
             }
 
-            $quantity = (int) $item['quantity'];
+            $quantity = is_array($item)
+                ? filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT)
+                : false;
 
-            if ($quantity <= 0) {
+            if ($quantity === false || $quantity < 1) {
                 return back()->withErrors([
-                    'order' =>
-                        'Số lượng sản phẩm không hợp lệ.',
+                    'order' => 'Số lượng sản phẩm không hợp lệ.',
                 ]);
             }
 
             if ($product->stock < $quantity) {
                 return back()->withErrors([
-                    'order' =>
-                        'Sản phẩm "'
-                        . $product->name
-                        . '" không đủ tồn kho.',
+                    'order' => 'Sản phẩm "'
+                        .$product->name
+                        .'" không đủ tồn kho.',
                 ]);
             }
 
@@ -454,7 +462,7 @@ class CheckoutController extends Controller
                     $validated,
                     $coupon
                 ) {
-                    $order = new Order();
+                    $order = new Order;
 
                     $order->user_id =
                         auth()->id();
@@ -510,23 +518,32 @@ class CheckoutController extends Controller
                             Product::lockForUpdate()
                                 ->find($productId);
 
-                        if (!$product) {
+                        if (! $product) {
                             throw new \Exception(
                                 'Sản phẩm không còn tồn tại.'
                             );
                         }
 
-                        $quantity =
-                            (int) $item['quantity'];
+                        if (! $product->status) {
+                            throw new \Exception(
+                                'Sản phẩm "'.$product->name.'" hiện không còn được bán.'
+                            );
+                        }
+
+                        $quantity = is_array($item)
+                            ? filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT)
+                            : false;
 
                         if (
-                            $product->stock <
+                            $quantity === false
+                            || $quantity < 1
+                            || $product->stock <
                             $quantity
                         ) {
                             throw new \Exception(
                                 'Sản phẩm "'
-                                . $product->name
-                                . '" không đủ tồn kho.'
+                                .$product->name
+                                .'" không đủ tồn kho.'
                             );
                         }
 
@@ -537,7 +554,7 @@ class CheckoutController extends Controller
                             $price * $quantity;
 
                         $orderDetail =
-                            new OrderDetail();
+                            new OrderDetail;
 
                         $orderDetail->order_id =
                             $order->id;
@@ -597,9 +614,8 @@ class CheckoutController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'order' =>
-                        'Không thể tạo đơn hàng: '
-                        . $e->getMessage(),
+                    'order' => 'Không thể tạo đơn hàng: '
+                        .$e->getMessage(),
                 ]);
         }
 
@@ -659,16 +675,15 @@ class CheckoutController extends Controller
             config('services.vnpay.return_url');
 
         if (
-            !$vnpUrl ||
-            !$tmnCode ||
-            !$hashSecret ||
-            !$returnUrl
+            ! $vnpUrl ||
+            ! $tmnCode ||
+            ! $hashSecret ||
+            ! $returnUrl
         ) {
             return redirect()
                 ->route('checkout.index')
                 ->withErrors([
-                    'vnpay' =>
-                        'Cấu hình VNPay chưa đầy đủ.',
+                    'vnpay' => 'Cấu hình VNPay chưa đầy đủ.',
                 ]);
         }
 
@@ -681,42 +696,31 @@ class CheckoutController extends Controller
         $inputData = [
             'vnp_Version' => '2.1.0',
 
-            'vnp_TmnCode' =>
-                $tmnCode,
+            'vnp_TmnCode' => $tmnCode,
 
-            'vnp_Amount' =>
-                (string) round(
-                    (float) $order->total * 100
-                ),
+            'vnp_Amount' => (string) round(
+                (float) $order->total * 100
+            ),
 
-            'vnp_Command' =>
-                'pay',
+            'vnp_Command' => 'pay',
 
-            'vnp_CreateDate' =>
-                now('Asia/Ho_Chi_Minh')
-                    ->format('YmdHis'),
+            'vnp_CreateDate' => now('Asia/Ho_Chi_Minh')
+                ->format('YmdHis'),
 
-            'vnp_CurrCode' =>
-                'VND',
+            'vnp_CurrCode' => 'VND',
 
-            'vnp_IpAddr' =>
-                $request->ip(),
+            'vnp_IpAddr' => $request->ip(),
 
-            'vnp_Locale' =>
-                'vn',
+            'vnp_Locale' => 'vn',
 
-            'vnp_OrderInfo' =>
-                'Thanh toan don hang '
-                . $order->id,
+            'vnp_OrderInfo' => 'Thanh toan don hang '
+                .$order->id,
 
-            'vnp_OrderType' =>
-                'other',
+            'vnp_OrderType' => 'other',
 
-            'vnp_ReturnUrl' =>
-                $returnUrl,
+            'vnp_ReturnUrl' => $returnUrl,
 
-            'vnp_TxnRef' =>
-                (string) $order->id,
+            'vnp_TxnRef' => (string) $order->id,
         ];
 
         ksort($inputData);
@@ -741,13 +745,13 @@ class CheckoutController extends Controller
 
             $hashData .=
                 urlencode($key)
-                . '='
-                . urlencode($value);
+                .'='
+                .urlencode($value);
 
             $query .=
                 urlencode($key)
-                . '='
-                . urlencode($value);
+                .'='
+                .urlencode($value);
 
             $i++;
         }
@@ -760,10 +764,10 @@ class CheckoutController extends Controller
 
         $paymentUrl =
             $vnpUrl
-            . '?'
-            . $query
-            . '&vnp_SecureHash='
-            . $secureHash;
+            .'?'
+            .$query
+            .'&vnp_SecureHash='
+            .$secureHash;
 
         return redirect()->away(
             $paymentUrl
@@ -793,24 +797,22 @@ class CheckoutController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        if (!$secureHash) {
+        if (! $secureHash) {
             return redirect()
                 ->route('orders.index')
                 ->withErrors([
-                    'vnpay' =>
-                        'Không nhận được chữ ký từ VNPay.',
+                    'vnpay' => 'Không nhận được chữ ký từ VNPay.',
                 ]);
         }
 
         $hashSecret =
             config('services.vnpay.hash_secret');
 
-        if (!$hashSecret) {
+        if (! $hashSecret) {
             return redirect()
                 ->route('orders.index')
                 ->withErrors([
-                    'vnpay' =>
-                        'Cấu hình VNPay chưa đầy đủ.',
+                    'vnpay' => 'Cấu hình VNPay chưa đầy đủ.',
                 ]);
         }
 
@@ -821,7 +823,7 @@ class CheckoutController extends Controller
             );
 
         if (
-            !hash_equals(
+            ! hash_equals(
                 strtolower($calculatedHash),
                 strtolower($secureHash)
             )
@@ -829,8 +831,7 @@ class CheckoutController extends Controller
             return redirect()
                 ->route('orders.index')
                 ->withErrors([
-                    'vnpay' =>
-                        'Chữ ký VNPay không hợp lệ.',
+                    'vnpay' => 'Chữ ký VNPay không hợp lệ.',
                 ]);
         }
 
@@ -843,12 +844,11 @@ class CheckoutController extends Controller
         $orderId =
             $inputData['vnp_TxnRef'] ?? null;
 
-        if (!$orderId) {
+        if (! $orderId) {
             return redirect()
                 ->route('orders.index')
                 ->withErrors([
-                    'vnpay' =>
-                        'Không tìm thấy mã đơn hàng.',
+                    'vnpay' => 'Không tìm thấy mã đơn hàng.',
                 ]);
         }
 
@@ -862,12 +862,11 @@ class CheckoutController extends Controller
             )
             ->first();
 
-        if (!$order) {
+        if (! $order) {
             return redirect()
                 ->route('orders.index')
                 ->withErrors([
-                    'vnpay' =>
-                        'Không tìm thấy đơn hàng.',
+                    'vnpay' => 'Không tìm thấy đơn hàng.',
                 ]);
         }
 
@@ -887,8 +886,7 @@ class CheckoutController extends Controller
                     $order
                 )
                 ->withErrors([
-                    'vnpay' =>
-                        'Đơn hàng không sử dụng VNPay.',
+                    'vnpay' => 'Đơn hàng không sử dụng VNPay.',
                 ]);
         }
 
@@ -920,8 +918,7 @@ class CheckoutController extends Controller
                     $order
                 )
                 ->withErrors([
-                    'vnpay' =>
-                        'Số tiền thanh toán VNPay không hợp lệ.',
+                    'vnpay' => 'Số tiền thanh toán VNPay không hợp lệ.',
                 ]);
         }
 
@@ -949,8 +946,7 @@ class CheckoutController extends Controller
                     $order
                 )
                 ->withErrors([
-                    'vnpay' =>
-                        'Thanh toán VNPay không thành công hoặc đã bị hủy.',
+                    'vnpay' => 'Thanh toán VNPay không thành công hoặc đã bị hủy.',
                 ]);
         }
 
@@ -997,10 +993,9 @@ class CheckoutController extends Controller
                     $order
                 )
                 ->withErrors([
-                    'vnpay' =>
-                        'VNPay đã thanh toán nhưng hệ thống '
-                        . 'không thể cập nhật đơn hàng: '
-                        . $e->getMessage(),
+                    'vnpay' => 'VNPay đã thanh toán nhưng hệ thống '
+                        .'không thể cập nhật đơn hàng: '
+                        .$e->getMessage(),
                 ]);
         }
 
@@ -1047,11 +1042,10 @@ class CheckoutController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            if (!$secureHash) {
+            if (! $secureHash) {
                 return response()->json([
                     'RspCode' => '97',
-                    'Message' =>
-                        'Invalid signature',
+                    'Message' => 'Invalid signature',
                 ]);
             }
 
@@ -1060,11 +1054,10 @@ class CheckoutController extends Controller
                     'services.vnpay.hash_secret'
                 );
 
-            if (!$hashSecret) {
+            if (! $hashSecret) {
                 return response()->json([
                     'RspCode' => '99',
-                    'Message' =>
-                        'VNPay configuration error',
+                    'Message' => 'VNPay configuration error',
                 ]);
             }
 
@@ -1075,7 +1068,7 @@ class CheckoutController extends Controller
                 );
 
             if (
-                !hash_equals(
+                ! hash_equals(
                     strtolower(
                         $calculatedHash
                     ),
@@ -1086,8 +1079,7 @@ class CheckoutController extends Controller
             ) {
                 return response()->json([
                     'RspCode' => '97',
-                    'Message' =>
-                        'Invalid signature',
+                    'Message' => 'Invalid signature',
                 ]);
             }
 
@@ -1104,11 +1096,10 @@ class CheckoutController extends Controller
             $order =
                 Order::find($orderId);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'RspCode' => '01',
-                    'Message' =>
-                        'Order not found',
+                    'Message' => 'Order not found',
                 ]);
             }
 
@@ -1118,8 +1109,7 @@ class CheckoutController extends Controller
             ) {
                 return response()->json([
                     'RspCode' => '01',
-                    'Message' =>
-                        'Order not found',
+                    'Message' => 'Order not found',
                 ]);
             }
 
@@ -1147,8 +1137,7 @@ class CheckoutController extends Controller
             ) {
                 return response()->json([
                     'RspCode' => '04',
-                    'Message' =>
-                        'Invalid amount',
+                    'Message' => 'Invalid amount',
                 ]);
             }
 
@@ -1164,8 +1153,7 @@ class CheckoutController extends Controller
             ) {
                 return response()->json([
                     'RspCode' => '02',
-                    'Message' =>
-                        'Order already confirmed',
+                    'Message' => 'Order already confirmed',
                 ]);
             }
 
@@ -1196,8 +1184,7 @@ class CheckoutController extends Controller
             ) {
                 return response()->json([
                     'RspCode' => '00',
-                    'Message' =>
-                        'Confirm Success',
+                    'Message' => 'Confirm Success',
                 ]);
             }
 
@@ -1213,8 +1200,7 @@ class CheckoutController extends Controller
 
             return response()->json([
                 'RspCode' => '00',
-                'Message' =>
-                    'Confirm Success',
+                'Message' => 'Confirm Success',
             ]);
 
         } catch (\Throwable $e) {
@@ -1222,8 +1208,7 @@ class CheckoutController extends Controller
 
             return response()->json([
                 'RspCode' => '99',
-                'Message' =>
-                    'Unknown error',
+                'Message' => 'Unknown error',
             ]);
         }
     }
@@ -1281,7 +1266,7 @@ class CheckoutController extends Controller
                                 $detail->product_id
                             );
 
-                    if (!$product) {
+                    if (! $product) {
                         throw new \Exception(
                             'Sản phẩm trong đơn hàng không còn tồn tại.'
                         );
@@ -1293,8 +1278,8 @@ class CheckoutController extends Controller
                     ) {
                         throw new \Exception(
                             'Sản phẩm "'
-                            . $product->name
-                            . '" không đủ tồn kho.'
+                            .$product->name
+                            .'" không đủ tồn kho.'
                         );
                     }
 
@@ -1357,7 +1342,7 @@ class CheckoutController extends Controller
             $inputData as $key => $value
         ) {
             if (
-                !str_starts_with(
+                ! str_starts_with(
                     $key,
                     'vnp_'
                 )
@@ -1378,8 +1363,8 @@ class CheckoutController extends Controller
 
             $hashData .=
                 urlencode($key)
-                . '='
-                . urlencode($value);
+                .'='
+                .urlencode($value);
 
             $i++;
         }
@@ -1401,14 +1386,73 @@ class CheckoutController extends Controller
         array $cart
     ): float {
         $subtotal = 0;
+        $products = Product::query()
+            ->whereIn('id', array_keys($cart))
+            ->get()
+            ->keyBy('id');
 
-        foreach ($cart as $item) {
+        foreach ($cart as $productId => $item) {
+            $product = $products->get($productId);
+            $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT);
+
             $subtotal +=
-                (float) $item['price']
-                * (int) $item['quantity'];
+                (float) $product->price
+                * $quantity;
         }
 
         return $subtotal;
+    }
+
+    private function cartAvailabilityError(array $cart): ?string
+    {
+        $products = Product::query()
+            ->whereIn('id', array_keys($cart))
+            ->get()
+            ->keyBy('id');
+
+        foreach ($cart as $productId => $item) {
+            if (! is_array($item)) {
+                return 'Giỏ hàng có dữ liệu sản phẩm không hợp lệ.';
+            }
+
+            $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT);
+
+            if ($quantity === false || $quantity < 1) {
+                return 'Số lượng sản phẩm không hợp lệ.';
+            }
+
+            $product = $products->get($productId);
+
+            if (! $product || ! $product->status) {
+                return 'Có sản phẩm trong giỏ không còn khả dụng.';
+            }
+
+            if ($quantity > $product->stock) {
+                return 'Sản phẩm "'.$product->name.'" không đủ tồn kho.';
+            }
+        }
+
+        return null;
+    }
+
+    private function refreshCartSnapshot(array $cart): array
+    {
+        $products = Product::query()
+            ->whereIn('id', array_keys($cart))
+            ->get()
+            ->keyBy('id');
+
+        foreach ($cart as $productId => &$item) {
+            $product = $products->get($productId);
+            $item['name'] = $product->name;
+            $item['price'] = $product->price;
+            $item['image'] = $product->image ?? '';
+        }
+        unset($item);
+
+        session()->put('cart', $cart);
+
+        return $cart;
     }
 
     /*
@@ -1421,7 +1465,7 @@ class CheckoutController extends Controller
         Coupon $coupon,
         float $subtotal
     ): bool {
-        if (!$coupon->status) {
+        if (! $coupon->status) {
             return false;
         }
 
