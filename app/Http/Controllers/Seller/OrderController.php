@@ -110,7 +110,18 @@ class OrderController extends Controller
             $order->payment_status = 'paid';
         }
 
-        $order->save();
+        $updated = Order::whereKey($order->id)
+            ->whereNull('received_at')
+            ->update([
+                'status' => $order->status,
+                'payment_status' => $order->payment_status,
+            ]);
+
+            if (!$updated) {
+                return back()->withErrors([
+                'status' => 'Khách đã xác nhận nhận hàng. Không thể đổi trạng thái đơn.',
+                    ]);
+                }
 
         return back()->with(
             'success',
