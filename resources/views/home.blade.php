@@ -64,7 +64,6 @@
                                 >
                             </div>
                         </div>
-                        <p class="mt-2 text-xs text-gray-500">Nhập số VND liền, ví dụ 50000; không nhập 50.000.</p>
                         @error('min_price')
                             <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
                         @enderror
