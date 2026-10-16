@@ -104,105 +104,50 @@
 
     </div>
 
-    {{-- THÔNG TIN KHÁCH HÀNG --}}
-<div style="
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-    overflow-wrap: anywhere;
-">
-    <h3 style="margin-top: 0;">Thông tin khách hàng và nhận hàng</h3>
+    {{-- ĐỊA CHỈ NHẬN HÀNG --}}
+    <div style="
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    ">
 
-    <p>
-        <strong>Khách hàng:</strong>
-        {{ $order->user?->name ?? 'Chưa có thông tin' }}
-    </p>
+        <h3 style="margin-top: 0;">
+            Địa chỉ nhận hàng
+        </h3>
 
-    <p>
-        <strong>Email:</strong>
-        {{ $order->user?->email ?? 'Chưa có thông tin' }}
-    </p>
+        @if($order->address)
 
-    <p>
-        <strong>Người nhận:</strong>
-        {{ $order->address?->recipient_name ?? 'Chưa có thông tin' }}
-    </p>
+            <p>
+                <strong>Người nhận:</strong>
+                {{ $order->address->receiver_name ?? $order->address->name ?? 'Không có' }}
+            </p>
 
-    <p>
-        <strong>Số điện thoại:</strong>
-        {{ $order->address?->phone ?? 'Chưa có thông tin' }}
-    </p>
+            <p>
+                <strong>Số điện thoại:</strong>
+                {{ $order->address->phone ?? 'Không có' }}
+            </p>
 
-    <p>
-        <strong>Địa chỉ nhận hàng:</strong>
-        {{ $order->address?->address_detail ?? 'Chưa có thông tin' }}
-    </p>
+            <p>
+                <strong>Địa chỉ:</strong>
 
-    <p>
-        <strong>Ghi chú:</strong>
-        {{ $order->note ?: 'Không có ghi chú' }}
-    </p>
-</div>
+                {{ $order->address->address_line ?? $order->address->address ?? '' }}
 
-    {{-- XÁC NHẬN NHẬN HÀNG --}}
-<div style="
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-">
-    <h3 style="margin-top: 0;">Tình trạng nhận hàng</h3>
+                {{ $order->address->ward ?? '' }}
 
-    @if($order->received_at)
-        <p style="color: #059669;">
-            Bạn đã xác nhận nhận hàng lúc
-            {{ $order->received_at->format('d/m/Y H:i') }}.
-        </p>
+                {{ $order->address->district ?? '' }}
 
-    @elseif(in_array($order->status, ['shipping', 'completed'], true))
-        <p>Bạn chưa xác nhận nhận được hàng.</p>
+                {{ $order->address->province ?? '' }}
+            </p>
 
-        <form
-            action="{{ route('orders.received', $order) }}"
-            method="POST"
-            onsubmit="return confirm('Bạn đã nhận được đầy đủ hàng?');"
-        >
-            @csrf
-            @method('PATCH')
+        @else
 
-            <button
-                type="submit"
-                style="
-                    background: #087443;
-                    color: white;
-                    border: none;
-                    border-radius: 6px;
-                    padding: 12px 20px;
-                    cursor: pointer;
-                    margin-top: 12px;
-                "
-            >
-                Đã nhận được hàng
-            </button>
-        </form>
+            <p>Không tìm thấy thông tin địa chỉ.</p>
 
-        <p style="color: #666; margin-top: 10px;">
-            Nếu chưa nhận được hàng, bạn chưa cần bấm xác nhận.
-        </p>
+        @endif
 
-    @elseif($order->status === 'cancelled')
-        <p>Đơn hàng đã hủy.</p>
-
-    @else
-        <p>
-            Chưa nhận hàng. Bạn có thể xác nhận khi đơn chuyển
-            sang trạng thái đang giao.
-        </p>
-    @endif
-</div>
+    </div>
 
     {{-- SẢN PHẨM --}}
     <div style="

@@ -33,24 +33,18 @@ class AuthController extends Controller
             ],
         ]);
 
-        // 1. Tạo throttle key chuẩn
-        $throttleKey = Str::lower($request->input('email')) . '|' . $request->ip();
-
-        // 2. Kiểm tra nếu đã thử sai quá 5 lần thì chặn ngay
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            return $this->loginTooManyAttemptsResponse(
-                $request,
-                RateLimiter::availableIn($throttleKey)
-            );
-        }
-
-        // 3. Thử đăng nhập
         if (! Auth::attempt(
             $credentials + ['is_active' => true],
             $request->boolean('remember')
         )) {
-            // Tăng số lần thử sai
             RateLimiter::hit($throttleKey, 60);
+
+            if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+                return $this->loginTooManyAttemptsResponse(
+                    $request,
+                    RateLimiter::availableIn($throttleKey)
+                );
+            }
 
             return back()
                 ->withErrors([
@@ -59,7 +53,6 @@ class AuthController extends Controller
                 ->onlyInput('email');
         }
 
-        // 4. Đăng nhập thành công -> Xóa đếm Rate Limiter & tạo lại session
         RateLimiter::clear($throttleKey);
         $request->session()->regenerate();
 

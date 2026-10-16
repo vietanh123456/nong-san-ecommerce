@@ -208,10 +208,6 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/orders/{order}', [OrderController::class, 'show'])
         ->name('orders.show');
-    Route::patch('/orders/{order}/received', [
-        OrderController::class,
-        'confirmReceived',
-        ])->name('orders.received');
 });
 /*
 |--------------------------------------------------------------------------

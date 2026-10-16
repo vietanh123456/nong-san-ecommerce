@@ -93,49 +93,42 @@
     </div>
 
 
-    {{-- THÔNG TIN KHÁCH HÀNG VÀ NHẬN HÀNG --}}
-<div style="
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-    overflow-wrap: anywhere;
-">
-    <h3 style="margin-top: 0;">
-        Thông tin khách hàng và nhận hàng
-    </h3>
+    {{-- ĐỊA CHỈ --}}
 
-    <p>
-        <strong>Khách hàng:</strong>
-        {{ $order->user?->name ?? 'Chưa có thông tin' }}
-    </p>
+    <div style="
+        background:white;
+        border:1px solid #ddd;
+        border-radius:10px;
+        padding:20px;
+        margin-bottom:20px;
+    ">
 
-    <p>
-        <strong>Email:</strong>
-        {{ $order->user?->email ?? 'Chưa có thông tin' }}
-    </p>
+        <h3>Địa chỉ nhận hàng</h3>
 
-    <p>
-        <strong>Người nhận:</strong>
-        {{ $order->address?->recipient_name ?? 'Chưa có thông tin' }}
-    </p>
+        @if($order->address)
 
-    <p>
-        <strong>Số điện thoại nhận hàng:</strong>
-        {{ $order->address?->phone ?? 'Chưa có thông tin' }}
-    </p>
+            <p>
+                <strong>Người nhận:</strong>
+                {{ $order->address->receiver_name ?? $order->address->name ?? 'Không có' }}
+            </p>
 
-    <p>
-        <strong>Địa chỉ nhận hàng:</strong>
-        {{ $order->address?->address_detail ?? 'Chưa có thông tin' }}
-    </p>
+            <p>
+                <strong>Số điện thoại:</strong>
+                {{ $order->address->phone ?? 'Không có' }}
+            </p>
 
-    <p>
-        <strong>Ghi chú đơn hàng:</strong>
-        {{ $order->note ?: 'Không có ghi chú' }}
-    </p>
-</div>
+            <p>
+                <strong>Địa chỉ:</strong>
+                {{ $order->address->address ?? $order->address->full_address ?? 'Không có' }}
+            </p>
+
+        @else
+
+            <p>Không có thông tin địa chỉ.</p>
+
+        @endif
+
+    </div>
 
 
     {{-- SẢN PHẨM --}}
