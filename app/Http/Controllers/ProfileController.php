@@ -207,55 +207,38 @@ class ProfileController extends Controller
     }
 
     public function storeAddress(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'recipient_name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-            'phone' => [
-                'required',
-                'string',
-                'max:20',
-            ],
-            'address_detail' => [
-                'required',
-                'string',
-                'max:1000',
-            ],
-            'is_default' => [
-                'nullable',
-                'boolean',
-            ],
-        ]);
+{
+    $validated = $request->validate([
+        'recipient_name' => ['required', 'string', 'max:255'],
+        'phone' => ['required', 'string', 'max:20'],
+        'address_detail' => ['required', 'string', 'max:1000'],
+        'is_default' => ['nullable', 'boolean'],
+    ]);
 
-        $user = Auth::user();
-        $isDefault = $request->boolean('is_default');
+    $user = $request->user();
 
-        DB::transaction(function () use (
-            $user,
-            $validated,
-            $isDefault
-        ): void {
-            if ($isDefault) {
-                $user->addresses()->update([
-                    'is_default' => false,
-                ]);
-            }
+    $address = DB::transaction(function () use ($user, $validated, $request) {
+        $isDefault = $request->boolean('is_default')
+            || !$user->addresses()->exists();
 
-            $user->addresses()->create([
-                'recipient_name' => $validated['recipient_name'],
-                'phone' => $validated['phone'],
-                'address_detail' => $validated['address_detail'],
-                'is_default' => $isDefault,
+        if ($isDefault) {
+            $user->addresses()->update([
+                'is_default' => false,
             ]);
-        });
+        }
 
-        return redirect()
-            ->route('profile')
-            ->with('success', 'Thêm địa chỉ thành công!');
-    }
+        return $user->addresses()->create([
+            'recipient_name' => $validated['recipient_name'],
+            'phone' => $validated['phone'],
+            'address_detail' => $validated['address_detail'],
+            'is_default' => $isDefault,
+        ]);
+    });
+
+    return back()
+        ->withInput(['address_id' => $address->id])
+        ->with('success', 'Đã thêm địa chỉ nhận hàng.');
+}
 
     public function destroyAddress(
         Address $address

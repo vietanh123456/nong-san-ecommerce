@@ -4,15 +4,22 @@
 <div style="max-width: 900px; margin: 30px auto; padding: 0 20px;">
 
     <div style="margin-bottom: 20px;">
-        <a href="{{ route('orders.index') }}"
+        <a href="{{ $order->user_id === null ? route('products.index') : route('orders.index') }}"
            style="color: #059669; text-decoration: none;">
-            ← Quay lại lịch sử đơn hàng
+            ← Quay lại
         </a>
     </div>
 
     <h2 style="color: #087443; margin-bottom: 25px;">
         Chi tiết đơn hàng #{{ $order->id }}
     </h2>
+
+    @if($order->user_id === null)
+        <div style="padding:16px;background:#f0fdf4;margin-bottom:20px;overflow-wrap:anywhere;">
+            <p>Hãy lưu liên kết riêng này để xem lại đơn và xác nhận nhận hàng. Chỉ chia sẻ với người bạn cho phép xem đơn.</p>
+            <a href="{{ $order->detailUrl() }}">{{ $order->detailUrl() }}</a>
+        </div>
+    @endif
 
     {{-- THÔNG TIN ĐƠN --}}
     <div style="
@@ -104,49 +111,9 @@
 
     </div>
 
-    {{-- THÔNG TIN KHÁCH HÀNG --}}
-<div style="
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-    overflow-wrap: anywhere;
-">
-    <h3 style="margin-top: 0;">Thông tin khách hàng và nhận hàng</h3>
+    @include('orders.partials.customer-info')
 
-    <p>
-        <strong>Khách hàng:</strong>
-        {{ $order->user?->name ?? 'Chưa có thông tin' }}
-    </p>
-
-    <p>
-        <strong>Email:</strong>
-        {{ $order->user?->email ?? 'Chưa có thông tin' }}
-    </p>
-
-    <p>
-        <strong>Người nhận:</strong>
-        {{ $order->address?->recipient_name ?? 'Chưa có thông tin' }}
-    </p>
-
-    <p>
-        <strong>Số điện thoại:</strong>
-        {{ $order->address?->phone ?? 'Chưa có thông tin' }}
-    </p>
-
-    <p>
-        <strong>Địa chỉ nhận hàng:</strong>
-        {{ $order->address?->address_detail ?? 'Chưa có thông tin' }}
-    </p>
-
-    <p>
-        <strong>Ghi chú:</strong>
-        {{ $order->note ?: 'Không có ghi chú' }}
-    </p>
-</div>
-
-    {{-- XÁC NHẬN NHẬN HÀNG --}}
+{{-- XÁC NHẬN NHẬN HÀNG --}}
 <div style="
     background: white;
     border: 1px solid #ddd;
@@ -166,7 +133,9 @@
         <p>Bạn chưa xác nhận nhận được hàng.</p>
 
         <form
-            action="{{ route('orders.received', $order) }}"
+            action="{{ $order->user_id === null
+                ? \Illuminate\Support\Facades\URL::signedRoute('guest.orders.received', ['order' => $order->id])
+                : route('orders.received', $order) }}"
             method="POST"
             onsubmit="return confirm('Bạn đã nhận được đầy đủ hàng?');"
         >

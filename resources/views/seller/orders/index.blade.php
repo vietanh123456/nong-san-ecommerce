@@ -150,7 +150,7 @@
                             Khách hàng:
                         </strong>
 
-                        {{ $order->user->name ?? 'Không có' }}
+                        {{ $order->customer_snapshot['customer_name'] ?? $order->user?->name ?? 'Khách không có tài khoản' }}
                     </div>
 
                     <a

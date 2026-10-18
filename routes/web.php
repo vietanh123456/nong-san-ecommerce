@@ -148,6 +148,12 @@ Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])
 |--------------------------------------------------------------------------
 */
 
+// Liên kết riêng cho đơn không có tài khoản; chữ ký chống đoán mã đơn.
+Route::get('/guest/orders/{order}', [OrderController::class, 'show'])
+    ->middleware('signed')->name('guest.orders.show');
+Route::patch('/guest/orders/{order}/received', [OrderController::class, 'confirmReceived'])
+    ->middleware(['signed', 'throttle:20,1'])->name('guest.orders.received');
+
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
