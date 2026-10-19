@@ -37,6 +37,7 @@ class Order extends Model
         'status',
         'note',
         'coupon_id',
+        'customer_snapshot',
     ];
 
     protected function casts(): array
@@ -47,7 +48,15 @@ class Order extends Model
             'discount' => 'decimal:2',
             'total' => 'decimal:2',
             'received_at' => 'datetime',
+            'customer_snapshot' => 'array',
         ];
+    }
+
+    public function detailUrl(): string
+    {
+        return $this->user_id === null
+            ? \Illuminate\Support\Facades\URL::signedRoute('guest.orders.show', ['order' => $this->id])
+            : route('orders.show', $this);
     }
 
     public function user(): BelongsTo

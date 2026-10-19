@@ -30,13 +30,9 @@ class OrderController extends Controller
     /**
      * Chi tiết đơn hàng.
      */
-    public function show(Order $order): View
+    public function show(Request $request, Order $order): View
     {
-        abort_unless(
-            (int) $order->user_id === (int) auth()->id(),
-            403,
-            'Bạn không có quyền xem đơn hàng này.'
-        );
+        $this->authorizeOrder($request, $order);
 
         $order->load([
             'user',
@@ -50,13 +46,9 @@ class OrderController extends Controller
     /**
      * Khách hàng xác nhận đã nhận được hàng.
      */
-    public function confirmReceived(Order $order): RedirectResponse
+    public function confirmReceived(Request $request, Order $order): RedirectResponse
     {
-        abort_unless(
-            (int) $order->user_id === (int) auth()->id(),
-            403,
-            'Bạn không có quyền xác nhận đơn hàng này.'
-        );
+        $this->authorizeOrder($request, $order);
 
         DB::transaction(function () use ($order) {
             $lockedOrder = Order::whereKey($order->id)
@@ -92,8 +84,17 @@ class OrderController extends Controller
             $lockedOrder->save();
         });
 
-        return redirect()
-            ->route('orders.show', $order)
+        return redirect($order->detailUrl())
             ->with('success', 'Bạn đã xác nhận nhận hàng thành công.');
+    }
+    private function authorizeOrder(Request $request, Order $order): void
+    {
+        if ($request->routeIs('guest.orders.*')) {
+            abort_unless($order->user_id === null && $request->hasValidSignature(), 403);
+            return;
+        }
+
+        abort_unless($request->user() && $order->user_id !== null
+            && (int) $order->user_id === (int) $request->user()->id, 403);
     }
 }

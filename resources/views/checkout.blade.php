@@ -114,6 +114,24 @@
         .btn-order:hover {
             background: #0f5132;
         }
+        .new-address-panel { margin-bottom: 20px; }
+        .new-address-panel summary { cursor: pointer; color: #146c43; font-weight: bold; }
+        .new-address-fields {
+            margin-top: 15px; padding: 16px; background: #f0fdf4;
+            border: 1px solid #bbf7d0; border-radius: 8px;
+        }
+        .address-field { margin-bottom: 14px; }
+        .address-field label { display: block; margin-bottom: 6px; }
+        .address-field input, .address-field textarea {
+            display: block; width: 100%; box-sizing: border-box; padding: 10px;
+            border: 1px solid #ccc; border-radius: 5px; font: inherit;
+        }
+        @media (max-width: 600px) {
+            body { margin: 0 auto; padding: 12px; }
+            .section { padding: 16px; }
+            .coupon-form { flex-wrap: wrap; }
+            .coupon-form input { min-width: 0; }
+        }
     </style>
 </head>
 
@@ -309,6 +327,13 @@
 {{-- FORM ĐẶT HÀNG --}}
 {{-- ====================================================== --}}
 
+{{-- Form độc lập: các ô thêm địa chỉ liên kết bằng thuộc tính form. --}}
+@auth
+<form id="checkout-address-form" action="{{ route('address.store') }}" method="POST">
+    @csrf
+</form>
+@endauth
+
 <form
     action="{{ route('checkout.placeOrder') }}"
     method="POST"
@@ -326,6 +351,98 @@
 
         <h2>Địa chỉ nhận hàng</h2>
 
+        @auth
+            <details class="new-address-panel"
+                @if($addresses->isEmpty() || $errors->has('recipient_name') || $errors->has('phone') || $errors->has('address_detail')) open @endif>
+                <summary>+ Thêm địa chỉ nhận hàng mới</summary>
+
+                <div class="new-address-fields">
+                    <div class="address-field">
+                        <label for="new-recipient">Tên người nhận</label>
+                        <input id="new-recipient" form="checkout-address-form"
+                            type="text" name="recipient_name" maxlength="255"
+                            value="{{ old('recipient_name', auth()->user()->name) }}"
+                            autocomplete="name" required>
+                        @error('recipient_name')
+                            <p class="error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="address-field">
+                        <label for="new-phone">Số điện thoại nhận hàng</label>
+                        <input id="new-phone" form="checkout-address-form"
+                            type="tel" name="phone" maxlength="20"
+                            value="{{ old('phone', auth()->user()->phone) }}"
+                            autocomplete="tel" required>
+                        @error('phone')
+                            <p class="error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="address-field">
+                        <label for="new-address">Địa chỉ đầy đủ</label>
+                        <textarea id="new-address" form="checkout-address-form"
+                            name="address_detail" rows="3" maxlength="1000"
+                            autocomplete="street-address"
+                            placeholder="Số nhà, đường, phường/xã, tỉnh/thành phố"
+                            required>{{ old('address_detail') }}</textarea>
+                        @error('address_detail')
+                            <p class="error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <label>
+                        <input form="checkout-address-form" type="checkbox"
+                            name="is_default" value="1" @checked(old('is_default'))>
+                        Đặt làm địa chỉ mặc định
+                    </label>
+
+                    <div style="margin-top: 15px;">
+                        <button form="checkout-address-form" type="submit" class="btn-coupon">
+                            Lưu địa chỉ
+                        </button>
+                    </div>
+                    <p style="color: #666; font-size: 14px;">
+                        Lưu địa chỉ trước khi chọn vận chuyển và thanh toán.
+                        Trang sẽ tải lại sau khi lưu.
+                    </p>
+                </div>
+            </details>
+        @endauth
+
+
+        @guest
+            <p>Bạn có thể đặt hàng trực tiếp, không cần đăng nhập.</p>
+            <div class="new-address-fields">
+                <div class="address-field">
+                    <label for="guest-name">Họ tên người nhận</label>
+                    <input id="guest-name" name="guest_name" type="text" maxlength="255"
+                        value="{{ old('guest_name') }}" autocomplete="name" required>
+                    @error('guest_name') <p class="error">{{ $message }}</p> @enderror
+                </div>
+                <div class="address-field">
+                    <label for="guest-email">Email</label>
+                    <input id="guest-email" name="guest_email" type="email" maxlength="255"
+                        value="{{ old('guest_email') }}" autocomplete="email" required>
+                    @error('guest_email') <p class="error">{{ $message }}</p> @enderror
+                </div>
+                <div class="address-field">
+                    <label for="guest-phone">Số điện thoại nhận hàng</label>
+                    <input id="guest-phone" name="guest_phone" type="tel" maxlength="20" minlength="8"
+                        value="{{ old('guest_phone') }}" autocomplete="tel" required>
+                    @error('guest_phone') <p class="error">{{ $message }}</p> @enderror
+                </div>
+                <div class="address-field">
+                    <label for="guest-address">Địa chỉ nhận hàng đầy đủ</label>
+                    <textarea id="guest-address" name="guest_address" rows="3" maxlength="1000"
+                        autocomplete="street-address" placeholder="Số nhà, đường, phường/xã, tỉnh/thành phố"
+                        required>{{ old('guest_address') }}</textarea>
+                    @error('guest_address') <p class="error">{{ $message }}</p> @enderror
+                </div>
+            </div>
+        @endguest
+
+        @auth
         @if ($addresses->count() > 0)
 
             @foreach ($addresses as $address)
@@ -341,9 +458,8 @@
 
                             {{ old(
                                 'address_id',
-                                $address->is_default
-                                    ? $address->id
-                                    : null
+                                $addresses->firstWhere('is_default', true)?->id
+                                    ?? $addresses->first()?->id
                             ) == $address->id
                                 ? 'checked'
                                 : ''
@@ -384,16 +500,10 @@
                 Bạn chưa có địa chỉ nhận hàng.
             </p>
 
-            @guest
 
-                <p>
-                    Hãy đăng nhập để sử dụng
-                    địa chỉ đã lưu.
-                </p>
-
-            @endguest
 
         @endif
+        @endauth
 
     </div>
 
@@ -690,7 +800,7 @@
     {{-- ================================================== --}}
 
     @if (
-        $addresses->count() > 0
+        (auth()->guest() || $addresses->count() > 0)
         &&
         $shippingZones->count() > 0
     )

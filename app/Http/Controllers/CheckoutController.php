@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {
@@ -243,38 +244,36 @@ class CheckoutController extends Controller
 
     public function placeOrder(Request $request): RedirectResponse
     {
-        if (! auth()->check()) {
-            return redirect()
-                ->route('login')
-                ->withErrors([
-                    'login' => 'Bạn cần đăng nhập để đặt hàng.',
-                ]);
-        }
+        $isGuest = $request->user() === null;
 
         $validated = $request->validate([
-            'address_id' => [
-                'required',
-                'integer',
-                'exists:addresses,id',
-            ],
-
-            'shipping_zone_id' => [
-                'required',
-                'integer',
-                'exists:shipping_zones,id',
-            ],
-
-            'payment_method' => [
-                'required',
-                'in:cod,vnpay',
-            ],
-
-            'note' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
+            'address_id' => [Rule::excludeIf($isGuest), 'required', 'integer', 'exists:addresses,id'],
+            'guest_name' => [Rule::excludeIf(!$isGuest), 'required', 'string', 'max:255'],
+            'guest_email' => [Rule::excludeIf(!$isGuest), 'required', 'email', 'max:255'],
+            'guest_phone' => [Rule::excludeIf(!$isGuest), 'required', 'string', 'regex:/^[0-9+().\s-]{8,20}$/'],
+            'guest_address' => [Rule::excludeIf(!$isGuest), 'required', 'string', 'max:1000'],
+            'shipping_zone_id' => ['required', 'integer', 'exists:shipping_zones,id'],
+            'payment_method' => ['required', 'in:cod,vnpay'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ], [
+            'guest_name.required' => 'Vui lòng nhập tên người nhận.',
+            'guest_email.required' => 'Vui lòng nhập email.',
+            'guest_email.email' => 'Email không hợp lệ.',
+            'guest_phone.required' => 'Vui lòng nhập số điện thoại.',
+            'guest_phone.regex' => 'Số điện thoại phải dài từ 8 đến 20 ký tự và đúng định dạng.',
+            'guest_address.required' => 'Vui lòng nhập địa chỉ nhận hàng.',
         ]);
+
+        // Kiểm tra trước khi tạo đơn để tránh đơn unpaid khi chưa cấu hình VNPay.
+        if ($validated['payment_method'] === 'vnpay') {
+            foreach (['url', 'tmn_code', 'hash_secret', 'return_url'] as $key) {
+                if (!config('services.vnpay.' . $key)) {
+                    return back()->withInput()->withErrors([
+                        'vnpay' => 'VNPay chưa được cấu hình. Vui lòng chọn COD.',
+                    ]);
+                }
+            }
+        }
 
         $cart = session()->get('cart', []);
 
@@ -298,23 +297,32 @@ class CheckoutController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $address = Address::where(
-            'id',
-            $validated['address_id']
-        )
-            ->where(
-                'user_id',
-                auth()->id()
-            )
-            ->first();
+        $address = null;
+        if (!$isGuest) {
+            $address = Address::whereKey($validated['address_id'])
+                ->where('user_id', $request->user()->id)
+                ->first();
 
-        if (! $address) {
-            return back()
-                ->withInput()
-                ->withErrors([
+            if (!$address) {
+                return back()->withInput()->withErrors([
                     'address_id' => 'Địa chỉ nhận hàng không hợp lệ.',
                 ]);
+            }
         }
+
+        $customerSnapshot = $isGuest ? [
+            'customer_name' => $validated['guest_name'],
+            'email' => $validated['guest_email'],
+            'recipient_name' => $validated['guest_name'],
+            'phone' => $validated['guest_phone'],
+            'address_detail' => $validated['guest_address'],
+        ] : [
+            'customer_name' => $request->user()->name,
+            'email' => $request->user()->email,
+            'recipient_name' => $address->recipient_name,
+            'phone' => $address->phone,
+            'address_detail' => $address->address_detail,
+        ];
 
         /*
         |--------------------------------------------------------------------------
@@ -455,6 +463,7 @@ class CheckoutController extends Controller
                 function () use (
                     $cart,
                     $address,
+                    $customerSnapshot,
                     $shippingFee,
                     $subtotal,
                     $discount,
@@ -468,7 +477,7 @@ class CheckoutController extends Controller
                         auth()->id();
 
                     $order->address_id =
-                        $address->id;
+                        $address?->id;
 
                     /*
                     |----------------------------------------------------------
@@ -503,6 +512,7 @@ class CheckoutController extends Controller
                     $order->note =
                         $validated['note'] ?? null;
 
+                    $order->customer_snapshot = $customerSnapshot;
                     $order->save();
 
                     /*
@@ -625,6 +635,12 @@ class CheckoutController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        if ($order->user_id === null) {
+            $guestOrders = session('guest_checkout_orders', []);
+            $guestOrders[] = $order->id;
+            session(['guest_checkout_orders' => array_slice(array_unique($guestOrders), -50)]);
+        }
+
         if (
             $validated['payment_method']
             === 'cod'
@@ -632,8 +648,7 @@ class CheckoutController extends Controller
             session()->forget('cart');
             session()->forget('coupon');
 
-            return redirect()
-                ->route('products.index')
+            return redirect($order->detailUrl())
                 ->with(
                     'success',
                     'Đặt hàng COD thành công!'
@@ -799,7 +814,7 @@ class CheckoutController extends Controller
 
         if (! $secureHash) {
             return redirect()
-                ->route('orders.index')
+                ->route(auth()->check() ? 'orders.index' : 'products.index')
                 ->withErrors([
                     'vnpay' => 'Không nhận được chữ ký từ VNPay.',
                 ]);
@@ -810,7 +825,7 @@ class CheckoutController extends Controller
 
         if (! $hashSecret) {
             return redirect()
-                ->route('orders.index')
+                ->route(auth()->check() ? 'orders.index' : 'products.index')
                 ->withErrors([
                     'vnpay' => 'Cấu hình VNPay chưa đầy đủ.',
                 ]);
@@ -829,7 +844,7 @@ class CheckoutController extends Controller
             )
         ) {
             return redirect()
-                ->route('orders.index')
+                ->route(auth()->check() ? 'orders.index' : 'products.index')
                 ->withErrors([
                     'vnpay' => 'Chữ ký VNPay không hợp lệ.',
                 ]);
@@ -846,28 +861,27 @@ class CheckoutController extends Controller
 
         if (! $orderId) {
             return redirect()
-                ->route('orders.index')
+                ->route(auth()->check() ? 'orders.index' : 'products.index')
                 ->withErrors([
                     'vnpay' => 'Không tìm thấy mã đơn hàng.',
                 ]);
         }
 
-        $order = Order::where(
-            'id',
-            $orderId
-        )
-            ->where(
-                'user_id',
-                auth()->id()
-            )
-            ->first();
+        $order = Order::find($orderId);
+        $ownsOrder = $order && (
+            ($order->user_id !== null && auth()->check()
+                && (int) $order->user_id === (int) auth()->id())
+            || ($order->user_id === null && in_array(
+                (int) $order->id,
+                array_map('intval', session('guest_checkout_orders', [])),
+                true
+            ))
+        );
 
-        if (! $order) {
-            return redirect()
-                ->route('orders.index')
-                ->withErrors([
-                    'vnpay' => 'Không tìm thấy đơn hàng.',
-                ]);
+        if (!$ownsOrder) {
+            return redirect()->route('products.index')->withErrors([
+                'vnpay' => 'Không thể truy cập đơn hàng này trong phiên hiện tại.',
+            ]);
         }
 
         /*
@@ -880,11 +894,7 @@ class CheckoutController extends Controller
             $order->payment_method !==
             'vnpay'
         ) {
-            return redirect()
-                ->route(
-                    'orders.show',
-                    $order
-                )
+            return redirect($order->detailUrl())
                 ->withErrors([
                     'vnpay' => 'Đơn hàng không sử dụng VNPay.',
                 ]);
@@ -912,11 +922,7 @@ class CheckoutController extends Controller
             $vnpAmount !==
             $expectedAmount
         ) {
-            return redirect()
-                ->route(
-                    'orders.show',
-                    $order
-                )
+            return redirect($order->detailUrl())
                 ->withErrors([
                     'vnpay' => 'Số tiền thanh toán VNPay không hợp lệ.',
                 ]);
@@ -940,11 +946,7 @@ class CheckoutController extends Controller
             $responseCode !== '00' ||
             $transactionStatus !== '00'
         ) {
-            return redirect()
-                ->route(
-                    'orders.show',
-                    $order
-                )
+            return redirect($order->detailUrl())
                 ->withErrors([
                     'vnpay' => 'Thanh toán VNPay không thành công hoặc đã bị hủy.',
                 ]);
@@ -963,11 +965,7 @@ class CheckoutController extends Controller
             session()->forget('cart');
             session()->forget('coupon');
 
-            return redirect()
-                ->route(
-                    'orders.show',
-                    $order
-                )
+            return redirect($order->detailUrl())
                 ->with(
                     'success',
                     'Đơn hàng đã được thanh toán trước đó.'
@@ -987,11 +985,7 @@ class CheckoutController extends Controller
         } catch (\Throwable $e) {
             report($e);
 
-            return redirect()
-                ->route(
-                    'orders.show',
-                    $order
-                )
+            return redirect($order->detailUrl())
                 ->withErrors([
                     'vnpay' => 'VNPay đã thanh toán nhưng hệ thống '
                         .'không thể cập nhật đơn hàng: '
@@ -1002,11 +996,7 @@ class CheckoutController extends Controller
         session()->forget('cart');
         session()->forget('coupon');
 
-        return redirect()
-            ->route(
-                'orders.show',
-                $order
-            )
+        return redirect($order->detailUrl())
             ->with(
                 'success',
                 'Thanh toán VNPay thành công!'
