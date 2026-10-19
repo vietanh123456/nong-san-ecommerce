@@ -51,6 +51,35 @@ class SellerRegistrationTest extends TestCase
         ]);
     }
 
+    public function test_user_can_submit_a_seller_application_and_be_approved(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+
+        $this
+            ->actingAs($user)
+            ->post(route('become-seller.submit'), [
+                'store_name' => 'Nông sản của tôi',
+                'phone' => '0912345678',
+                'address' => 'Đà Lạt',
+                'description' => 'Nông sản sạch tại vườn.',
+            ])
+            ->assertRedirect(route('become-seller'))
+            ->assertSessionHas('success');
+
+        $sellerRequest = SellerRequest::where('user_id', $user->id)->firstOrFail();
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this
+            ->actingAs($admin)
+            ->patch(route('admin.seller-requests.approve', $sellerRequest))
+            ->assertRedirect(route('admin.seller-requests.index'));
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'role' => 'seller',
+        ]);
+    }
+
     public function test_buyer_can_view_seller_registration_form(): void
     {
         $buyer = User::factory()->create([

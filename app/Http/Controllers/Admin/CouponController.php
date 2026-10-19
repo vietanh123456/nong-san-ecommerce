@@ -16,7 +16,8 @@ class CouponController extends Controller
     private function checkAdmin(): void
     {
         abort_unless(
-            auth()->check() && auth()->user()->role === 'admin',
+            auth()->check()
+                && in_array(auth()->user()->role, ['admin', 'super_admin'], true),
             403
         );
     }

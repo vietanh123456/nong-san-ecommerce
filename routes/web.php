@@ -171,6 +171,16 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/profile', [ProfileController::class, 'update'])
         ->name('profile.update');
 
+    Route::post('/profile/email', [
+        ProfileController::class,
+        'requestEmailChange',
+    ])->name('profile.email.request');
+
+    Route::delete('/profile/email', [
+        ProfileController::class,
+        'cancelEmailChange',
+    ])->name('profile.email.cancel');
+
     Route::get('/profile/verify-email', [
         ProfileController::class,
         'showVerifyEmail',
@@ -217,7 +227,7 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/orders/{order}/received', [
         OrderController::class,
         'confirmReceived',
-        ])->name('orders.received');
+    ])->name('orders.received');
 });
 /*
 |--------------------------------------------------------------------------

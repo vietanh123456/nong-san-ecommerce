@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-    <form action="{{ route('products.index') }}" method="GET">
-        <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+            <form id="product-filter-form" action="{{ route('products.index') }}" method="GET">
             <aside class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                 <div class="mb-5 flex items-center justify-between">
                     <h1 class="text-lg font-bold text-gray-900">Bộ lọc</h1>
@@ -14,6 +14,8 @@
                         Xóa tất cả
                     </a>
                 </div>
+                <input type="hidden" name="search" value="{{ request('search') }}">
+                <input type="hidden" name="sort" value="{{ request('sort', 'newest') }}">
 
                 <section class="border-b border-gray-100 pb-5">
                     <h2 class="mb-3 text-sm font-bold text-gray-800">Danh mục</h2>
@@ -33,32 +35,33 @@
                     <h2 class="mb-3 text-sm font-bold text-gray-800">Khoảng giá</h2>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label for="min-price" class="mb-1 block text-xs text-gray-500">Từ (VND)</label>
+                            <label for="min-price" class="mb-1 block text-xs text-gray-500">Tối thiểu</label>
                             <input
                                 id="min-price"
-                                type="number"
+                                type="text"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
                                 name="min_price"
-                                min="0"
-                                step="1000"
                                 value="{{ request('min_price') }}"
                                 placeholder="0"
-                                class="w-full rounded-lg border border-gray-200 px-1.5 py-2 text-xs focus:border-emerald-500 focus:outline-none"
+                                class="w-full rounded-lg border border-gray-200 px-2.5 py-2 text-sm focus:border-emerald-500 focus:outline-none"
                             >
                         </div>
                         <div>
-                            <label for="max-price" class="mb-1 block text-xs text-gray-500">Đến (VND)</label>
+                            <label for="max-price" class="mb-1 block text-xs text-gray-500">Tối đa</label>
                             <input
                                 id="max-price"
-                                type="number"
+                                type="text"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
                                 name="max_price"
-                                min="0"
-                                step="1000"
                                 value="{{ request('max_price') }}"
-                                placeholder="Không giới hạn"
-                                class="w-full rounded-lg border border-gray-200 px-1.5 py-2 text-xs focus:border-emerald-500 focus:outline-none"
+                                placeholder="Tối đa"
+                                class="w-full rounded-lg border border-gray-200 px-2.5 py-2 text-sm focus:border-emerald-500 focus:outline-none"
                             >
                         </div>
                     </div>
+                    <p class="mt-2 text-xs text-gray-500"></p>
                     @error('min_price')
                         <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
                     @enderror
@@ -96,9 +99,24 @@
                     Áp dụng bộ lọc
                 </button>
             </aside>
+            </form>
 
             <main class="min-w-0">
-                <div class="mb-6 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row">
+                <form
+                    action="{{ route('products.index') }}"
+                    method="GET"
+                    class="mb-4 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row"
+                >
+                    @foreach (request('categories', []) as $categoryId)
+                        <input type="hidden" name="categories[]" value="{{ $categoryId }}">
+                    @endforeach
+                    @if (request('category_id'))
+                        <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                    @endif
+                    <input type="hidden" name="min_price" value="{{ request('min_price') }}">
+                    <input type="hidden" name="max_price" value="{{ request('max_price') }}">
+                    <input type="hidden" name="rating" value="{{ request('rating') }}">
+                    <input type="hidden" name="sort" value="{{ request('sort', 'newest') }}">
                     <label class="sr-only" for="product-search">Tìm kiếm sản phẩm</label>
                     <input
                         id="product-search"
@@ -114,9 +132,9 @@
                     >
                         Tìm kiếm
                     </button>
-                </div>
+                </form>
 
-                <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 class="text-xl font-bold text-gray-900">Sản phẩm nông sản</h2>
                         @if (request('search'))
@@ -129,36 +147,44 @@
                         </p>
                     </div>
 
-                    <label class="flex items-center gap-2 text-sm text-gray-600">
-                        Sắp xếp
+                    <form
+                        action="{{ route('products.index') }}"
+                        method="GET"
+                        class="flex flex-wrap items-center gap-2 text-sm text-gray-600 sm:justify-end"
+                        id="product-sort-form"
+                    >
+                        <input type="hidden" name="search" value="{{ request('search') }}">
+                        @foreach (request('categories', []) as $categoryId)
+                            <input type="hidden" name="categories[]" value="{{ $categoryId }}">
+                        @endforeach
+                        @if (request('category_id'))
+                            <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                        @endif
+                        <input type="hidden" name="min_price" value="{{ request('min_price') }}">
+                        <input type="hidden" name="max_price" value="{{ request('max_price') }}">
+                        <input type="hidden" name="rating" value="{{ request('rating') }}">
+                        <label for="product-sort" class="shrink-0">Sắp xếp</label>
                         <select
+                            id="product-sort"
                             name="sort"
-                            class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                            onchange="this.form.submit()"
+                            class="max-w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
                         >
-                            <option value="">Mới nhất</option>
+                            <option value="newest" @selected(! request('sort') || request('sort') === 'newest')>Mới nhất</option>
                             <option value="price_asc" @selected(request('sort') === 'price_asc')>Giá thấp đến cao</option>
                             <option value="price_desc" @selected(request('sort') === 'price_desc')>Giá cao đến thấp</option>
                         </select>
-                    </label>
                 </div>
 
                 @if ($products->isNotEmpty())
                     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         @foreach ($products as $product)
-                            <article class="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md">
+                            <article class="flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md">
                                 <a
                                     href="{{ route('products.show', $product->id) }}"
                                     class="flex h-48 items-center justify-center overflow-hidden bg-gray-50"
                                 >
-                                    @if ($product->image)
-                                        <img
-                                            src="{{ asset('storage/' . $product->image) }}"
-                                            alt="{{ $product->name }}"
-                                            class="h-full w-full object-cover"
-                                        >
-                                    @else
-                                        <span class="text-5xl" aria-hidden="true">🥑</span>
-                                    @endif
+                                    @include('products._image', ['product' => $product])
                                 </a>
 
                                 <div class="flex flex-1 flex-col justify-between p-4">

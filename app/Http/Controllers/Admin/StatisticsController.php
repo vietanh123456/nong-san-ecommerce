@@ -59,7 +59,7 @@ class StatisticsController extends Controller
         $topProductsByRevenue = $this->topProducts('revenue');
         $topProductsByQuantity = $this->topProducts('quantity');
 
-        $totalCustomers = User::where('role', 'customer')->count();
+        $totalCustomers = User::whereIn('role', ['buyer', 'user'])->count();
 
         return view('admin.statistics', [
             'revenue' => $revenue,
@@ -152,7 +152,7 @@ class StatisticsController extends Controller
         $topProductsByRevenue = $this->topProducts('revenue');
         $topProductsByQuantity = $this->topProducts('quantity');
 
-        $totalCustomers = User::where('role', 'customer')->count();
+        $totalCustomers = User::whereIn('role', ['buyer', 'user'])->count();
 
         return response()->json([
             'data' => [

@@ -12,8 +12,45 @@ class CartController extends Controller
     public function index(): View
     {
         $cart = session()->get('cart', []);
+        $products = Product::query()
+            ->whereIn('id', array_keys($cart))
+            ->get()
+            ->keyBy('id');
+        $cartHasUnavailableProducts = false;
 
-        return view('cart', compact('cart'));
+        foreach ($cart as $productId => &$item) {
+            $product = $products->get($productId);
+            $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT);
+            $item['availability_error'] = null;
+
+            if (! $product) {
+                $item['availability_error'] = 'Sản phẩm không còn tồn tại.';
+            } elseif (! $product->status) {
+                $item['availability_error'] = 'Sản phẩm hiện không còn được bán.';
+            } elseif ($quantity === false || $quantity < 1) {
+                $item['availability_error'] = 'Số lượng sản phẩm không hợp lệ.';
+            } elseif ($quantity > $product->stock) {
+                $item['availability_error'] = 'Số lượng trong giỏ vượt quá tồn kho hiện tại.';
+            } else {
+                $item['availability_error'] = null;
+            }
+
+            if ($product) {
+                $item['name'] = $product->name;
+                $item['price'] = $product->price;
+                $item['image'] = $product->image ?? '';
+            } else {
+                $item['price'] = 0;
+            }
+
+            $cartHasUnavailableProducts = $cartHasUnavailableProducts
+                || $item['availability_error'] !== null;
+        }
+        unset($item);
+
+        session()->put('cart', $cart);
+
+        return view('cart', compact('cart', 'cartHasUnavailableProducts'));
     }
 
     public function add(
@@ -29,6 +66,12 @@ class CartController extends Controller
         ]);
 
         $quantity = (int) ($validated['quantity'] ?? 1);
+
+        if (! $product->status) {
+            return back()->withErrors([
+                'quantity' => 'Sản phẩm hiện không còn được bán.',
+            ]);
+        }
 
         if ($quantity > $product->stock) {
             return back()->withErrors([
@@ -66,7 +109,7 @@ class CartController extends Controller
 
     public function update(
         Request $request,
-        Product $product
+        int $productId
     ): RedirectResponse {
         $validated = $request->validate([
             'action' => [
@@ -76,24 +119,49 @@ class CartController extends Controller
         ]);
 
         $cart = session()->get('cart', []);
-        $productId = $product->id;
 
-        if (!isset($cart[$productId])) {
+        if (! isset($cart[$productId])) {
             return back()->withErrors([
                 'cart' => 'Sản phẩm không tồn tại trong giỏ hàng.',
             ]);
         }
 
         if ($validated['action'] === 'increase') {
-            if ($cart[$productId]['quantity'] >= $product->stock) {
+            $product = Product::query()->find($productId);
+
+            if (! $product || ! $product->status) {
+                return back()->withErrors([
+                    'cart' => 'Sản phẩm hiện không còn được bán.',
+                ]);
+            }
+
+            $currentQuantity = filter_var(
+                $cart[$productId]['quantity'] ?? null,
+                FILTER_VALIDATE_INT
+            );
+
+            if ($currentQuantity === false || $currentQuantity < 1) {
+                return back()->withErrors([
+                    'quantity' => 'Số lượng sản phẩm trong giỏ không hợp lệ.',
+                ]);
+            }
+
+            if ($currentQuantity >= $product->stock) {
                 return back()->withErrors([
                     'quantity' => 'Số lượng đã đạt mức tồn kho.',
                 ]);
             }
 
-            $cart[$productId]['quantity']++;
+            $cart[$productId]['quantity'] = $currentQuantity + 1;
+            $cart[$productId]['name'] = $product->name;
+            $cart[$productId]['price'] = $product->price;
+            $cart[$productId]['image'] = $product->image ?? '';
         } else {
-            $cart[$productId]['quantity']--;
+            $currentQuantity = filter_var(
+                $cart[$productId]['quantity'] ?? null,
+                FILTER_VALIDATE_INT
+            );
+            $cart[$productId]['quantity'] = max(0, (int) $currentQuantity - 1);
 
             if ($cart[$productId]['quantity'] <= 0) {
                 unset($cart[$productId]);
@@ -108,11 +176,11 @@ class CartController extends Controller
         );
     }
 
-    public function remove(Product $product): RedirectResponse
+    public function remove(int $productId): RedirectResponse
     {
         $cart = session()->get('cart', []);
 
-        unset($cart[$product->id]);
+        unset($cart[$productId]);
 
         session()->put('cart', $cart);
 

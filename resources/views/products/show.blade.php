@@ -12,15 +12,7 @@
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
         {{-- Ảnh sản phẩm --}}
         <div class="bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center min-h-[320px] border border-gray-100">
-            @if ($product->image)
-                <img
-                    src="{{ asset('storage/' . $product->image) }}"
-                    alt="{{ $product->name }}"
-                    class="w-full h-full object-cover"
-                >
-            @else
-                <span class="text-8xl">🥑</span>
-            @endif
+            @include('products._image', ['product' => $product])
         </div>
 
         {{-- Thông tin sản phẩm --}}

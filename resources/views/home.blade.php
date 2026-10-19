@@ -1,110 +1,7 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
+@extends('layouts.app')
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Nông Sản Việt</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-</head>
-
-<body class="bg-gray-50 min-h-screen">
-    {{-- Header --}}
-    <header class="bg-emerald-800 text-white shadow-md sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-            {{-- Logo --}}
-            <a
-                href="{{ route('home') }}"
-                class="text-2xl font-bold flex items-center gap-2 whitespace-nowrap"
-            >
-                <span>🌱</span>
-                <span>Nông Sản Việt</span>
-            </a>
-
-            {{-- Menu --}}
-            <nav class="flex flex-wrap items-center gap-2">
-                {{-- Seller Dashboard --}}
-                @auth
-                    @if (Auth::user()->role === 'admin')
-                        <a
-                            href="{{ route('admin.dashboard') }}"
-                            class="bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-white"
-                        >
-                            🛡️ {{ Auth::user()->name }}
-                        </a>
-                    @elseif (Auth::user()->role === 'seller')
-                        <a
-                            href="{{ route('seller.dashboard') }}"
-                            class="bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-white"
-                        >
-                            🏪 Kênh người bán
-                        </a>
-                    @else
-                        <a
-                            href="{{ route('profile') }}"
-                            class="text-sm font-medium text-emerald-100 hover:text-white hover:underline"
-                        >
-                            👤 {{ Auth::user()->name }}
-                        </a>
-                        <a
-                            href="{{ route('become-seller') }}"
-                            class="bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-white"
-                        >
-                            🌾 Trở thành người bán
-                        </a>
-                    @endif
-                    <form action="{{ route('logout') }}" method="POST" class="inline">
-                        @csrf
-
-                        <button
-                            type="submit"
-                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-semibold transition"
-                        >
-                            Đăng xuất
-                        </button>
-                    </form>
-                @else
-                    <a
-                        href="{{ route('login') }}"
-                        class="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-lg text-xs font-semibold transition"
-                    >
-                        Đăng nhập
-                    </a>
-
-                    <a
-                        href="{{ route('register') }}"
-                        class="border border-white/40 hover:bg-white/10 px-3 py-2 rounded-lg text-xs font-semibold transition"
-                    >
-                        Đăng ký
-                    </a>
-                @endauth
-            </nav>
-        </div>
-    </header>
-
-    {{-- Nội dung --}}
-    <main class="max-w-7xl mx-auto px-4 py-8">
-        {{-- Thông báo --}}
-        @if (session('success'))
-            <div class="mb-5 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        @if (session('warning'))
-            <div class="mb-5 p-4 bg-amber-100 border border-amber-400 text-amber-700 rounded-lg">
-                {{ session('warning') }}
-            </div>
-        @endif
+@section('content')
+    <div class="max-w-7xl mx-auto px-4 py-6">
 
         <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
             <aside class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -141,29 +38,29 @@
                         <h2 class="mb-3 text-sm font-bold text-gray-800">Khoảng giá</h2>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label for="home-min-price" class="mb-1 block text-xs text-gray-500">Từ (đ)</label>
+                                <label for="home-min-price" class="mb-1 block text-xs text-gray-500">Tối thiểu</label>
                                 <input
                                     id="home-min-price"
-                                    type="number"
+                                    type="text"
+                                    inputmode="numeric"
+                                    pattern="[0-9]*"
                                     name="min_price"
-                                    min="0"
-                                    step="1000"
                                     value="{{ request('min_price') }}"
                                     placeholder="0"
-                                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                                    class="w-full rounded-lg border border-gray-200 px-2.5 py-2 text-sm focus:border-emerald-500 focus:outline-none"
                                 >
                             </div>
                             <div>
-                                <label for="home-max-price" class="mb-1 block text-xs text-gray-500">Đến (đ)</label>
+                                <label for="home-max-price" class="mb-1 block text-xs text-gray-500">Tối đa</label>
                                 <input
                                     id="home-max-price"
-                                    type="number"
+                                    type="text"
+                                    inputmode="numeric"
+                                    pattern="[0-9]*"
                                     name="max_price"
-                                    min="0"
-                                    step="1000"
                                     value="{{ request('max_price') }}"
-                                    placeholder="Không giới hạn"
-                                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                                    placeholder="Tối đa"
+                                    class="w-full rounded-lg border border-gray-200 px-2.5 py-2 text-sm focus:border-emerald-500 focus:outline-none"
                                 >
                             </div>
                         </div>
@@ -221,7 +118,14 @@
                             <strong class="text-emerald-700">“{{ request('search') }}”</strong>
                         </p>
                         <a
-                            href="{{ route('home') }}"
+                            href="{{ route('home', [
+                                'categories' => request('categories', []),
+                                'category_id' => request('category_id'),
+                                'min_price' => request('min_price'),
+                                'max_price' => request('max_price'),
+                                'rating' => request('rating'),
+                                'sort' => request('sort'),
+                            ]) }}"
                             class="text-sm font-semibold text-emerald-600 hover:underline"
                         >
                             Xóa tìm kiếm
@@ -229,23 +133,49 @@
                     </div>
                 @endif
 
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3">
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm text-gray-500">
+                        {{ number_format($products->total()) }} sản phẩm
+                    </p>
+                    <form
+                        action="{{ route('home') }}"
+                        method="GET"
+                        class="flex flex-wrap items-center gap-2 text-sm text-gray-600 sm:justify-end"
+                        id="home-product-sort-form"
+                    >
+                        <input type="hidden" name="search" value="{{ request('search') }}">
+                        @foreach (request('categories', []) as $categoryId)
+                            <input type="hidden" name="categories[]" value="{{ $categoryId }}">
+                        @endforeach
+                        @if (request('category_id'))
+                            <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                        @endif
+                        <input type="hidden" name="min_price" value="{{ request('min_price') }}">
+                        <input type="hidden" name="max_price" value="{{ request('max_price') }}">
+                        <input type="hidden" name="rating" value="{{ request('rating') }}">
+                        <label for="home-product-sort" class="shrink-0">Sắp xếp</label>
+                        <select
+                            id="home-product-sort"
+                            name="sort"
+                            onchange="this.form.submit()"
+                            class="max-w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                        >
+                            <option value="newest" @selected(! request('sort') || request('sort') === 'newest')>Mới nhất</option>
+                            <option value="price_asc" @selected(request('sort') === 'price_asc')>Giá thấp đến cao</option>
+                            <option value="price_desc" @selected(request('sort') === 'price_desc')>Giá cao đến thấp</option>
+                        </select>
+                    </form>
+                </div>
+
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3">
             @forelse ($products as $product)
-                <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col">
+                <article class="h-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col">
                     {{-- Ảnh --}}
                     <a
                         href="{{ route('products.show', $product->id) }}"
                         class="h-48 bg-emerald-50 flex items-center justify-center p-4"
                     >
-                        @if ($product->image)
-                            <img
-                                src="{{ asset('storage/' . $product->image) }}"
-                                alt="{{ $product->name }}"
-                                class="h-full w-full object-contain"
-                            >
-                        @else
-                            <span class="text-6xl">🥑</span>
-                        @endif
+                        @include('products._image', ['product' => $product])
                     </a>
 
                     {{-- Thông tin --}}
@@ -254,7 +184,7 @@
                             {{ $product->category->name ?? 'Nông sản' }}
                         </span>
 
-                        <h3 class="font-bold text-gray-800 text-lg mt-3">
+                        <h3 class="min-h-14 line-clamp-2 font-bold text-gray-800 text-lg mt-3">
                             <a
                                 href="{{ route('products.show', $product->id) }}"
                                 class="hover:text-emerald-600 transition"
@@ -352,6 +282,5 @@
                 </div>
             </section>
         </div>
-    </main>
-</body>
-</html>
+    </div>
+@endsection

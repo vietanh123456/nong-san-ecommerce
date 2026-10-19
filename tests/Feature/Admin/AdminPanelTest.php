@@ -35,6 +35,16 @@ class AdminPanelTest extends TestCase
             ->assertSee('Chứng nhận chờ duyệt');
     }
 
+    public function test_super_admin_can_access_the_admin_dashboard(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin']);
+
+        $this
+            ->actingAs($superAdmin)
+            ->get(route('admin.dashboard'))
+            ->assertOk();
+    }
+
     public function test_admin_can_search_and_filter_users(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

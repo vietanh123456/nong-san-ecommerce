@@ -39,7 +39,7 @@ class SellerRequestController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($user->role !== 'buyer') {
+            if (! in_array($user->role, ['buyer', 'user'], true)) {
                 return false;
             }
 

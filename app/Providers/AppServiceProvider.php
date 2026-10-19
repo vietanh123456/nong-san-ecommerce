@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
         // Tự động đếm và truyền số lượng Yêu thích ra toàn bộ các trang
         View::composer('*', function ($view) {
             $wishlistCount = 0;
+            $cartCount = array_sum(array_column(session('cart', []), 'quantity'));
 
             if (Auth::check()) {
                 $wishlistCount = Wishlist::where('user_id', Auth::id())->count();
@@ -30,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $view->with('wishlistCount', $wishlistCount);
+            $view->with('cartCount', $cartCount);
         });
     }
 }

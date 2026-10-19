@@ -83,6 +83,54 @@ class WishlistTest extends TestCase
         }
     }
 
+    public function test_authenticated_users_see_the_standard_navigation_and_role_specific_actions(): void
+    {
+        $product = $this->createProduct();
+
+        foreach (['buyer', 'user', 'seller', 'admin', 'super_admin'] as $role) {
+            $user = User::factory()->create(['role' => $role]);
+
+            $this
+                ->actingAs($user)
+                ->post(route('wishlist.toggle', $product))
+                ->assertRedirect();
+
+            foreach ([route('home'), route('products.index')] as $page) {
+                $response = $this->get($page);
+
+                $response
+                    ->assertOk()
+                    ->assertSee('href="'.route('products.index').'"', false)
+                    ->assertSee('href="'.route('wishlist.index').'"', false)
+                    ->assertSee('href="'.route('cart.index').'"', false)
+                    ->assertSee('href="'.route('profile').'"', false)
+                    ->assertSee('action="'.route('logout').'"', false)
+                    ->assertSee(
+                        'class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full"',
+                        false
+                    )
+                    ->assertSeeText('1');
+
+                if (in_array($role, ['admin', 'super_admin'], true)) {
+                    $response
+                        ->assertSee('Admin Panel')
+                        ->assertSee('Duyệt người bán')
+                        ->assertDontSee('Trở thành người bán');
+                } elseif (in_array($role, ['user', 'buyer'], true)) {
+                    $response
+                        ->assertSee('Trở thành người bán')
+                        ->assertDontSee('Admin Panel')
+                        ->assertDontSee('Duyệt người bán');
+                } else {
+                    $response
+                        ->assertDontSee('Trở thành người bán')
+                        ->assertDontSee('Admin Panel')
+                        ->assertDontSee('Duyệt người bán');
+                }
+            }
+        }
+    }
+
     private function createProduct(): Product
     {
         $category = Category::create([
