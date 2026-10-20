@@ -15,7 +15,11 @@
     <div class="w-full max-w-[1000px] bg-white rounded-[32px] shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-2 min-h-[650px]">
         
         <!-- CỘT BÊN TRÁI: BANNER -->
-        <div class="bg-[#0e5c36] text-white p-10 flex flex-col justify-between relative overflow-hidden min-h-[500px] lg:min-h-auto">
+        <div
+            class="relative flex min-h-[500px] flex-col justify-between overflow-hidden bg-[#0e5c36] bg-cover bg-center p-10 text-white lg:min-h-0"
+            style="background-image: url('{{ asset('images/login-hero.png') }}');"
+        >
+            <div class="absolute inset-0 bg-gradient-to-b from-emerald-950/75 via-emerald-900/75 to-emerald-950/95"></div>
             <div class="relative z-10">
                 <div class="w-12 h-12 border border-white/30 rounded-xl flex items-center justify-center font-bold text-sm mb-12 tracking-wider">
                     MN
@@ -37,6 +41,13 @@
 
         <!-- CỘT BÊN PHẢI: FORM ĐĂNG KÝ -->
         <div class="p-8 lg:p-12 flex flex-col justify-center bg-white">
+            <a
+                href="{{ route('home') }}"
+                class="inline-flex items-center gap-2 mb-5 text-sm font-semibold text-[#0e5c36] hover:text-emerald-800 transition"
+            >
+                <span aria-hidden="true">←</span>
+                <span>Quay lại trang chủ</span>
+            </a>
             <span class="text-[11px] uppercase tracking-[0.15em] text-gray-400 font-semibold block mb-1">ĐỒNG HÀNH CÙNG CHÚNG TÔI</span>
             <h2 class="text-3xl font-serif font-bold text-slate-900 mb-1">Đăng ký</h2>
             <p class="text-xs text-slate-400 mb-6">Tạo tài khoản chỉ trong vài giây.</p>

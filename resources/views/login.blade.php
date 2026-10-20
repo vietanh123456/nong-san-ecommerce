@@ -17,7 +17,11 @@
     <div class="w-full max-w-[1000px] bg-white rounded-[32px] shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
         
         <!-- Cột bên trái: BANNER XANH -->
-        <div class="bg-[#0e5c36] text-white p-10 flex flex-col justify-between relative overflow-hidden">
+        <div
+            class="relative flex flex-col justify-between overflow-hidden bg-[#0e5c36] bg-cover bg-center p-10 text-white"
+            style="background-image: url('{{ asset('images/login-hero.png') }}');"
+        >
+            <div class="absolute inset-0 bg-gradient-to-b from-emerald-950/75 via-emerald-900/75 to-emerald-950/95"></div>
             <div class="relative z-10">
                 <div class="w-12 h-12 border border-white/30 rounded-xl flex items-center justify-center font-bold text-xl mb-8">
                     MN
@@ -38,6 +42,13 @@
         <!-- Cột bên phải: FORM ĐĂNG NHẬP -->
         <div class="p-8 sm:p-12 flex flex-col justify-between bg-white">
             <div>
+                <a
+                    href="{{ route('home') }}"
+                    class="inline-flex items-center gap-2 mb-5 text-sm font-semibold text-[#0e5c36] hover:text-emerald-800 transition"
+                >
+                    <span aria-hidden="true">←</span>
+                    <span>Quay lại trang chủ</span>
+                </a>
                 <!-- Header Form -->
                 <div class="mb-8">
                     <span class="text-[11px] uppercase tracking-[0.15em] text-gray-400 font-bold block mb-1">CHÀO MỪNG BẠN</span>

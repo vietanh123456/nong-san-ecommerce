@@ -79,7 +79,7 @@ class ProductController extends Controller
         try {
             if ($request->hasFile('image')) {
                 $imagePath = $request->file('image')
-                    ->store('products', 'public');
+                    ->store('products', 'supabase');
 
                 $data['image'] = $imagePath;
             }
@@ -92,6 +92,7 @@ class ProductController extends Controller
 
                 foreach ($variants as $variant) {
                     $product->variants()->create([
+                        'name' => $variant['name'],
                         'unit_id' => $variant['unit_id'],
                         'sku' => $variant['sku'],
                         'quantity' => $variant['quantity'],
@@ -118,7 +119,7 @@ class ProductController extends Controller
             }
 
             if ($imagePath !== null) {
-                Storage::disk('public')->delete($imagePath);
+                Storage::disk('supabase')->delete($imagePath);
             }
 
             throw $exception;
@@ -189,7 +190,7 @@ class ProductController extends Controller
         try {
             if ($request->hasFile('image')) {
                 $newImage = $request->file('image')
-                    ->store('products', 'public');
+                    ->store('products', 'supabase');
 
                 $data['image'] = $newImage;
             }
@@ -207,6 +208,7 @@ class ProductController extends Controller
                     $variantId = $variantData['id'] ?? null;
 
                     $values = [
+                        'name' => $variantData['name'],
                         'unit_id' => $variantData['unit_id'],
                         'sku' => $variantData['sku'],
                         'quantity' => $variantData['quantity'],
@@ -235,14 +237,14 @@ class ProductController extends Controller
             });
         } catch (Throwable $exception) {
             if ($newImage !== null) {
-                Storage::disk('public')->delete($newImage);
+                Storage::disk('supabase')->delete($newImage);
             }
 
             throw $exception;
         }
 
         if ($newImage !== null && $oldImage !== null) {
-            Storage::disk('public')->delete($oldImage);
+            Storage::disk('supabase')->delete($oldImage);
         }
 
         return redirect()
@@ -264,7 +266,7 @@ class ProductController extends Controller
         $product->delete();
 
         if ($image !== null) {
-            Storage::disk('public')->delete($image);
+            Storage::disk('supabase')->delete($image);
         }
 
         return redirect()

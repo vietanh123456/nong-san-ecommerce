@@ -139,121 +139,167 @@
     </div>
 
     {{-- Gửi đánh giá --}}
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8 mt-8">
-        <h2 class="text-xl font-bold text-gray-800 mb-5">
-            Gửi đánh giá của bạn
-        </h2>
+<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8 mt-8">
+    <h2 class="text-xl font-bold text-gray-800 mb-5">
+        Gửi đánh giá của bạn
+    </h2>
 
-        @auth
-            @if (auth()->user()->role === 'buyer')
-                <form
-                    action="{{ route('reviews.store', $product) }}"
-                    method="POST"
-                    class="space-y-4"
-                >
-                    @csrf
+    @if (
+        !auth()->check()
+        || in_array(auth()->user()->role, ['buyer', 'seller'], true)
+    )
+        <form
+            action="{{ route('reviews.store', $product) }}"
+            method="POST"
+            enctype="multipart/form-data"
+            class="space-y-4"
+        >
+            @csrf
 
-                    <div>
-                        <label
-                            for="rating"
-                            class="block text-sm font-bold text-gray-700 mb-2"
-                        >
-                            Số sao
-                        </label>
-
-                        <select
-                            id="rating"
-                            name="rating"
-                            class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                            required
-                        >
-                            <option value="">Chọn mức đánh giá</option>
-
-                            <option value="5" @selected(old('rating') == 5)>
-                                5 sao - Rất tốt
-                            </option>
-
-                            <option value="4" @selected(old('rating') == 4)>
-                                4 sao - Tốt
-                            </option>
-
-                            <option value="3" @selected(old('rating') == 3)>
-                                3 sao - Bình thường
-                            </option>
-
-                            <option value="2" @selected(old('rating') == 2)>
-                                2 sao - Chưa tốt
-                            </option>
-
-                            <option value="1" @selected(old('rating') == 1)>
-                                1 sao - Không hài lòng
-                            </option>
-                        </select>
-
-                        @error('rating')
-                            <p class="text-sm text-red-600 mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label
-                            for="comment"
-                            class="block text-sm font-bold text-gray-700 mb-2"
-                        >
-                            Bình luận
-                        </label>
-
-                        <textarea
-                            id="comment"
-                            name="comment"
-                            rows="4"
-                            maxlength="1000"
-                            placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."
-                            class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                        >{{ old('comment') }}</textarea>
-
-                        @error('comment')
-                            <p class="text-sm text-red-600 mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
-
-                    <button
-                        type="submit"
-                        class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl text-sm transition"
+            @guest
+                <div>
+                    <label
+                        for="guest_name"
+                        class="block text-sm font-bold text-gray-700 mb-2"
                     >
-                        Gửi đánh giá
-                    </button>
+                        Tên hiển thị
+                        <span class="font-normal text-gray-400">
+                            (không bắt buộc)
+                        </span>
+                    </label>
 
-                    <p class="text-xs text-gray-500">
-                        Đánh giá của bạn sẽ được đăng công khai ngay sau khi gửi.
-                    </p>
-                </form>
-            @else
-                <div class="bg-amber-50 text-amber-700 rounded-xl px-4 py-3 text-sm">
-                    Chỉ tài khoản khách hàng mới có thể gửi đánh giá.
+                    <input
+                        id="guest_name"
+                        name="guest_name"
+                        type="text"
+                        maxlength="100"
+                        value="{{ old('guest_name') }}"
+                        placeholder="Để trống sẽ hiển thị Khách vãng lai"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    >
+
+                    @error('guest_name')
+                        <p class="text-sm text-red-600 mt-1">
+                            {{ $message }}
+                        </p>
+                    @enderror
                 </div>
-            @endif
-        @else
-            <div class="bg-gray-50 rounded-xl px-4 py-4 text-sm text-gray-600">
-                Bạn cần
+            @endguest
 
-                <a
-                    href="{{ route('login') }}"
-                    class="font-bold text-emerald-600 hover:text-emerald-700"
+            <div>
+                <label
+                    for="rating"
+                    class="block text-sm font-bold text-gray-700 mb-2"
                 >
-                    đăng nhập
-                </a>
+                    Số sao *
+                </label>
 
-                để gửi đánh giá.
+                <select
+                    id="rating"
+                    name="rating"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    required
+                >
+                    <option value="">Chọn mức đánh giá</option>
+                    <option value="5" @selected(old('rating') == 5)>
+                        5 sao - Rất tốt
+                    </option>
+                    <option value="4" @selected(old('rating') == 4)>
+                        4 sao - Tốt
+                    </option>
+                    <option value="3" @selected(old('rating') == 3)>
+                        3 sao - Bình thường
+                    </option>
+                    <option value="2" @selected(old('rating') == 2)>
+                        2 sao - Chưa tốt
+                    </option>
+                    <option value="1" @selected(old('rating') == 1)>
+                        1 sao - Không hài lòng
+                    </option>
+                </select>
+
+                @error('rating')
+                    <p class="text-sm text-red-600 mt-1">
+                        {{ $message }}
+                    </p>
+                @enderror
             </div>
-        @endauth
-    </div>
 
-    {{-- Danh sách đánh giá công khai --}}
+            <div>
+                <label
+                    for="comment"
+                    class="block text-sm font-bold text-gray-700 mb-2"
+                >
+                    Bình luận
+                    <span class="font-normal text-gray-400">
+                        (không bắt buộc)
+                    </span>
+                </label>
+
+                <textarea
+                    id="comment"
+                    name="comment"
+                    rows="4"
+                    maxlength="1000"
+                    placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."
+                    class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                >{{ old('comment') }}</textarea>
+
+                @error('comment')
+                    <p class="text-sm text-red-600 mt-1">
+                        {{ $message }}
+                    </p>
+                @enderror
+            </div>
+
+            <div>
+                <label
+                    for="review_image"
+                    class="block text-sm font-bold text-gray-700 mb-2"
+                >
+                    Ảnh đánh giá
+                    <span class="font-normal text-gray-400">
+                        (không bắt buộc)
+                    </span>
+                </label>
+
+                <input
+                    id="review_image"
+                    name="image"
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    class="block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
+                >
+
+                <p class="mt-1 text-xs text-gray-400">
+                    JPG, JPEG, PNG hoặc WEBP; tối đa 2 MB.
+                </p>
+
+                @error('image')
+                    <p class="mt-1 text-sm text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
+            </div>
+            <button
+                type="submit"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl text-sm transition"
+            >
+                Gửi đánh giá
+            </button>
+
+            <p class="text-xs text-gray-500">
+                Đánh giá sẽ được đăng công khai ngay sau khi gửi.
+                Bạn không bắt buộc phải đăng nhập.
+            </p>
+        </form>
+    @else
+        <div class="bg-amber-50 text-amber-700 rounded-xl px-4 py-3 text-sm">
+            Tài khoản quản trị không sử dụng chức năng đánh giá sản phẩm.
+        </div>
+    @endif
+</div>
+{{-- Danh sách đánh giá công khai --}}
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8 mt-8">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h2 class="text-xl font-bold text-gray-800">
@@ -272,7 +318,7 @@
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
                                 <p class="font-bold text-gray-800">
-                                    {{ $review->user->name ?? 'Khách hàng' }}
+                                    {{ $review->user?->name ?? $review->guest_name ?? 'Khách vãng lai' }}
                                 </p>
 
                                 <div class="text-amber-400 mt-1">
@@ -294,6 +340,136 @@
                                 {{ $review->comment }}
                             </p>
                         @endif
+                    @if ($review->image)
+                        <div class="mt-4">
+                            <a
+                                href="{{ \Illuminate\Support\Facades\Storage::disk('supabase')->url($review->image) }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-block"
+                            >
+                                <img
+                                    src="{{ \Illuminate\Support\Facades\Storage::disk('supabase')->url($review->image) }}"
+                                    alt="Ảnh đính kèm đánh giá"
+                                    class="h-28 w-28 rounded-xl border border-gray-200 object-cover transition hover:opacity-90"
+                                >
+                            </a>
+                        </div>
+                    @endif
+                    @auth
+                        @if (
+                            $review->user_id !== null
+                            && (int) $review->user_id === (int) auth()->id()
+                        )
+                            <form
+                                action="{{ route('reviews.destroy', $review) }}"
+                                method="POST"
+                                class="mt-4"
+                                onsubmit="return confirm('Bạn có chắc muốn xóa đánh giá của mình?')"
+                            >
+                                @csrf
+                                @method('DELETE')
+
+                                <button
+                                    type="submit"
+                                    class="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-600 transition hover:bg-red-100"
+                                >
+                                    Xóa đánh giá của tôi
+                                </button>
+                            </form>
+                        @endif
+                    @endauth
+                    @if ($review->seller_reply)
+                        <div class="mt-4 ml-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="text-sm font-bold text-emerald-800">
+                                    🏪 Phản hồi từ người bán
+                                </p>
+
+                                @if ($review->seller_replied_at)
+                                    <span class="text-xs text-emerald-600">
+                                        {{ $review->seller_replied_at->format('d/m/Y H:i') }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            <p class="mt-2 text-sm leading-relaxed text-gray-700">
+                                {{ $review->seller_reply }}
+                            </p>
+                        </div>
+                    @endif
+
+                    @auth
+                        @if (
+                            auth()->user()->role === 'seller'
+                            && (int) $product->seller_id === (int) auth()->id()
+                        )
+                            <div class="mt-4 ml-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                <form
+                                    action="{{ route('reviews.reply', $review) }}"
+                                    method="POST"
+                                    class="space-y-3"
+                                >
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <label
+                                        for="seller_reply_{{ $review->id }}"
+                                        class="block text-sm font-bold text-gray-700"
+                                    >
+                                        {{ $review->seller_reply
+                                            ? 'Sửa phản hồi'
+                                            : 'Phản hồi đánh giá'
+                                        }}
+                                    </label>
+
+                                    <textarea
+                                        id="seller_reply_{{ $review->id }}"
+                                        name="seller_reply"
+                                        rows="3"
+                                        maxlength="1000"
+                                        placeholder="Nhập phản hồi của người bán..."
+                                        class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    >{{ $review->seller_reply }}</textarea>
+
+                                    @error('seller_reply')
+                                        <p class="mt-1 text-sm text-red-600">
+                                            {{ $message }}
+                                        </p>
+                                    @enderror
+
+                                    <button
+                                        type="submit"
+                                        class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700"
+                                    >
+                                        {{ $review->seller_reply
+                                            ? 'Cập nhật phản hồi'
+                                            : 'Gửi phản hồi'
+                                        }}
+                                    </button>
+                                </form>
+
+                                @if ($review->seller_reply)
+                                    <form
+                                        action="{{ route('reviews.reply.destroy', $review) }}"
+                                        method="POST"
+                                        class="mt-3"
+                                        onsubmit="return confirm('Bạn có chắc muốn xóa phản hồi này?')"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button
+                                            type="submit"
+                                            class="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-red-700"
+                                        >
+                                            Xóa phản hồi
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        @endif
+                    @endauth
                     </div>
                 @endforeach
             </div>
