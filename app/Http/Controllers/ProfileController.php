@@ -311,9 +311,10 @@ class ProfileController extends Controller
         ]);
     });
 
-    return back()
-        ->withInput(['address_id' => $address->id])
-        ->with('success', 'Đã thêm địa chỉ nhận hàng.');
+    return redirect()
+            ->route('profile')
+            ->withInput(['address_id' => $address->id])
+            ->with('success', 'Đã thêm địa chỉ nhận hàng.');
 }
 
     public function destroyAddress(
@@ -374,3 +375,4 @@ class ProfileController extends Controller
         return 'profile-email-otp-verify:'.$user->getKey();
     }
 }
+
