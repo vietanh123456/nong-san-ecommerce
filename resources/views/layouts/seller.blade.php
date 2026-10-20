@@ -36,12 +36,30 @@
         .header-nav {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 16px;
             flex-wrap: wrap;
         }
 
         .header-nav a:hover {
             text-decoration: underline;
+        }
+
+        .dashboard-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 9px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: 6px;
+            color: white;
+            background: #15803d;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+
+        .dashboard-link:hover {
+            background: #14532d;
+            text-decoration: none !important;
         }
 
         .container {
@@ -218,8 +236,15 @@
 <body>
     <header class="header">
         <nav class="header-nav">
-            <a href="{{ route('seller.dashboard') }}">
-                <strong>Seller Dashboard</strong>
+            <a
+                href="{{ route('seller.dashboard') }}"
+                class="dashboard-link"
+            >
+                ← Quay lại Seller Dashboard
+            </a>
+
+            <a href="{{ route('home') }}">
+                Trang chủ
             </a>
 
             <a href="{{ route('seller.products.index') }}">

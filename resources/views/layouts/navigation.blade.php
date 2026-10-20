@@ -24,6 +24,7 @@
                     >
                         Admin Panel
                     </a>
+
                     <a
                         href="{{ route('admin.seller-requests.index') }}"
                         class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-full text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-white"
@@ -32,11 +33,21 @@
                     </a>
                 @endif
 
+                @if (auth()->user()->role === 'seller')
+                    <a
+                        href="{{ route('seller.dashboard') }}"
+                        class="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
+                    >
+                        ← Seller Dashboard
+                    </a>
+                @endif
+
                 <a
                     href="{{ route('wishlist.index') }}"
                     class="inline-flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-white px-3 py-2 rounded-full font-medium transition"
                 >
                     <span>❤️ Yêu thích</span>
+
                     <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                         {{ $wishlistCount ?? 0 }}
                     </span>
@@ -47,6 +58,7 @@
                     class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-full font-medium transition"
                 >
                     <span>🛒 Giỏ hàng</span>
+
                     <span class="bg-white text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
                         {{ $cartCount ?? 0 }}
                     </span>
@@ -62,12 +74,6 @@
                 @endif
 
                 <div class="flex items-center gap-3 border-l border-white/20 pl-4">
-                    @if (auth()->user()->role === 'seller')
-                        <a href="{{ route('seller.dashboard') }}" class="font-semibold hover:underline">
-                            🏪 Kênh người bán
-                        </a>
-                    @endif
-
                     @if (in_array(auth()->user()->role, ['user', 'buyer'], true))
                         <a
                             href="{{ route('become-seller') }}"
@@ -84,8 +90,13 @@
                         👤 Hồ sơ
                     </a>
 
-                    <form action="{{ route('logout') }}" method="POST" class="inline">
+                    <form
+                        action="{{ route('logout') }}"
+                        method="POST"
+                        class="inline"
+                    >
                         @csrf
+
                         <button
                             type="submit"
                             class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"
@@ -95,22 +106,31 @@
                     </form>
                 </div>
             @else
-                    <a
-                        href="{{ route('cart.index') }}"
-                        class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-full font-medium transition"
-                    >
-                        <span>🛒 Giỏ hàng</span>
+                <a
+                    href="{{ route('cart.index') }}"
+                    class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-full font-medium transition"
+                >
+                    <span>🛒 Giỏ hàng</span>
 
-                        <span class="bg-white text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                            {{ $cartCount ?? 0 }}
-                        </span>
-                    </a>
+                    <span class="bg-white text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                        {{ $cartCount ?? 0 }}
+                    </span>
+                </a>
+
                 <div class="flex items-center gap-2 border-l border-white/20 pl-4">
-                    <a href="{{ route('login') }}" class="hover:underline font-medium">
+                    <a
+                        href="{{ route('login') }}"
+                        class="hover:underline font-medium"
+                    >
                         Đăng nhập
                     </a>
+
                     <span>/</span>
-                    <a href="{{ route('register') }}" class="hover:underline font-medium">
+
+                    <a
+                        href="{{ route('register') }}"
+                        class="hover:underline font-medium"
+                    >
                         Đăng ký
                     </a>
                 </div>

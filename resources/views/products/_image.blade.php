@@ -1,6 +1,6 @@
 @if ($product->image)
     <img
-        src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($product->image) }}"
+        src="{{ \Illuminate\Support\Facades\Storage::disk('supabase')->url($product->image) }}"
         alt="{{ $product->name }}"
         class="h-full w-full object-contain"
         onerror="this.hidden = true; this.nextElementSibling.hidden = false;"
@@ -27,3 +27,4 @@
     </svg>
     <span>Chưa có ảnh</span>
 </div>
+

@@ -154,6 +154,12 @@ Route::get('/guest/orders/{order}', [OrderController::class, 'show'])
 Route::patch('/guest/orders/{order}/received', [OrderController::class, 'confirmReceived'])
     ->middleware(['signed', 'throttle:20,1'])->name('guest.orders.received');
 
+Route::post('/products/{product}/reviews', [
+    ReviewController::class,
+    'store',
+])
+    ->middleware('throttle:5,1')
+    ->name('reviews.store');
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
@@ -214,10 +220,20 @@ Route::middleware('auth')->group(function (): void {
         'toggle',
     ])->name('wishlist.toggle');
 
-    Route::post('/products/{product}/reviews', [
+
+    Route::delete('/reviews/{review}', [
         ReviewController::class,
-        'store',
-    ])->name('reviews.store');
+        'destroy',
+    ])->name('reviews.destroy');
+    Route::patch('/reviews/{review}/reply', [
+        ReviewController::class,
+        'reply',
+    ])->name('reviews.reply');
+
+    Route::delete('/reviews/{review}/reply', [
+        ReviewController::class,
+        'destroyReply',
+    ])->name('reviews.reply.destroy');
 
     Route::get('/orders', [OrderController::class, 'index'])
         ->name('orders.index');
@@ -405,3 +421,6 @@ Route::middleware(['auth'])
     });
 Route::get('/vnpay/ipn', [CheckoutController::class, 'vnpayIpn'])
     ->name('vnpay.ipn');
+
+
+

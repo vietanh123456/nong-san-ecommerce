@@ -212,7 +212,11 @@ class ProductPaginationTest extends TestCase
             $response
                 ->assertOk()
                 ->assertSee('Chưa có ảnh cho '.$productWithoutImage->name)
-                ->assertSee('/storage/products/sample.jpg', false)
+                ->assertSee(
+                    \Illuminate\Support\Facades\Storage::disk('supabase')
+                        ->url('products/sample.jpg'),
+                    false
+                )
                 ->assertSee('this.hidden = true; this.nextElementSibling.hidden = false;', false)
                 ->assertDontSee('🥑');
         }
@@ -667,3 +671,4 @@ class ProductPaginationTest extends TestCase
         }
     }
 }
+

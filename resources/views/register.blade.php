@@ -37,6 +37,13 @@
 
         <!-- CỘT BÊN PHẢI: FORM ĐĂNG KÝ -->
         <div class="p-8 lg:p-12 flex flex-col justify-center bg-white">
+            <a
+                href="{{ route('home') }}"
+                class="inline-flex items-center gap-2 mb-5 text-sm font-semibold text-[#0e5c36] hover:text-emerald-800 transition"
+            >
+                <span aria-hidden="true">←</span>
+                <span>Quay lại trang chủ</span>
+            </a>
             <span class="text-[11px] uppercase tracking-[0.15em] text-gray-400 font-semibold block mb-1">ĐỒNG HÀNH CÙNG CHÚNG TÔI</span>
             <h2 class="text-3xl font-serif font-bold text-slate-900 mb-1">Đăng ký</h2>
             <p class="text-xs text-slate-400 mb-6">Tạo tài khoản chỉ trong vài giây.</p>

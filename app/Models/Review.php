@@ -14,8 +14,11 @@ class Review extends Model
     protected $fillable = [
         'product_id',
         'user_id',
+        'guest_name',
         'rating',
         'comment',
+        'seller_reply',
+        'seller_replied_at',
         'status',
         'moderated_by',
         'moderated_at',
@@ -25,6 +28,7 @@ class Review extends Model
     {
         return [
             'rating' => 'integer',
+            'seller_replied_at' => 'datetime',
             'moderated_at' => 'datetime',
         ];
     }

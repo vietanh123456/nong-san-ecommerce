@@ -38,6 +38,13 @@
         <!-- Cột bên phải: FORM ĐĂNG NHẬP -->
         <div class="p-8 sm:p-12 flex flex-col justify-between bg-white">
             <div>
+                <a
+                    href="{{ route('home') }}"
+                    class="inline-flex items-center gap-2 mb-5 text-sm font-semibold text-[#0e5c36] hover:text-emerald-800 transition"
+                >
+                    <span aria-hidden="true">←</span>
+                    <span>Quay lại trang chủ</span>
+                </a>
                 <!-- Header Form -->
                 <div class="mb-8">
                     <span class="text-[11px] uppercase tracking-[0.15em] text-gray-400 font-bold block mb-1">CHÀO MỪNG BẠN</span>

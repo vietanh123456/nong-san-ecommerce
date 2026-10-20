@@ -93,7 +93,7 @@
             <div>
                 @if ($product->image)
                     <img
-                        src="{{ asset('storage/' . $product->image) }}"
+                        src="{{ \Illuminate\Support\Facades\Storage::disk('supabase')->url($product->image) }}"
                         alt="{{ $product->name }}"
                         class="detail-image"
                     >
@@ -231,7 +231,7 @@
                             <tr>
                                 <td>
                                     <strong>
-                                        {{ $review->user->name ?? 'Người dùng' }}
+                                        {{ ($review->user?->name ?? $review->guest_name ?? 'Khách vãng lai') ?? 'Người dùng' }}
                                     </strong>
                                 </td>
 
@@ -266,3 +266,4 @@
         </section>
     </div>
 @endsection
+

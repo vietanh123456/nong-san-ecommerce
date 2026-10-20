@@ -65,6 +65,12 @@ class UpdateProductRequest extends FormRequest
                 'exists:product_variants,id',
             ],
 
+            'variants.*.name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
             'variants.*.unit_id' => [
                 'required',
                 Rule::exists('units', 'id')
@@ -146,6 +152,10 @@ class UpdateProductRequest extends FormRequest
             'variants.min' => 'Sản phẩm phải có ít nhất một lựa chọn bán.',
 
             'variants.*.id.exists' => 'Biến thể sản phẩm không tồn tại.',
+            'variants.*.name.required' => 'Vui lòng nhập tên phân loại.',
+            'variants.*.name.string' => 'Tên phân loại không hợp lệ.',
+            'variants.*.name.max' => 'Tên phân loại không được vượt quá 255 ký tự.',
+
             'variants.*.unit_id.required' => 'Vui lòng chọn đơn vị.',
             'variants.*.unit_id.exists' => 'Đơn vị không hợp lệ.',
 
@@ -164,3 +174,4 @@ class UpdateProductRequest extends FormRequest
         ];
     }
 }
+

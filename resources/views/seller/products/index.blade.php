@@ -54,7 +54,7 @@
                             <td>
                                 @if ($product->image)
                                     <img
-                                        src="{{ asset('storage/' . $product->image) }}"
+                                        src="{{ \Illuminate\Support\Facades\Storage::disk('supabase')->url($product->image) }}"
                                         alt="{{ $product->name }}"
                                         class="product-image"
                                     >

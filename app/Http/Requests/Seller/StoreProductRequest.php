@@ -58,6 +58,12 @@ class StoreProductRequest extends FormRequest
                 'min:1',
             ],
 
+            'variants.*.name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
             'variants.*.unit_id' => [
                 'required',
                 Rule::exists('units', 'id')
@@ -113,6 +119,10 @@ class StoreProductRequest extends FormRequest
             'variants.required' => 'Sản phẩm phải có ít nhất một lựa chọn bán.',
             'variants.min' => 'Sản phẩm phải có ít nhất một lựa chọn bán.',
 
+            'variants.*.name.required' => 'Vui lòng nhập tên phân loại.',
+            'variants.*.name.string' => 'Tên phân loại không hợp lệ.',
+            'variants.*.name.max' => 'Tên phân loại không được vượt quá 255 ký tự.',
+
             'variants.*.unit_id.required' => 'Vui lòng chọn đơn vị.',
             'variants.*.unit_id.exists' => 'Đơn vị không hợp lệ.',
 
@@ -132,3 +142,4 @@ class StoreProductRequest extends FormRequest
         ];
     }
 }
+

@@ -5,6 +5,7 @@
         $variantRows = $product->variants
             ->map(fn ($variant) => [
                 'id' => $variant->id,
+                'name' => $variant->name,
                 'unit_id' => $variant->unit_id,
                 'sku' => $variant->sku,
                 'quantity' => $variant->quantity,
@@ -17,6 +18,7 @@
 
     if (empty($variantRows)) {
         $variantRows = [[
+            'name' => '',
             'unit_id' => '',
             'sku' => '',
             'quantity' => 1,
@@ -114,7 +116,7 @@
     @if (!empty($product?->image))
         <div style="margin-top: 12px;">
             <img
-                src="{{ asset('storage/' . $product->image) }}"
+                src="{{ \Illuminate\Support\Facades\Storage::disk('supabase')->url($product->image) }}"
                 alt="{{ $product->name }}"
                 class="product-image"
             >
@@ -161,6 +163,7 @@
     <table>
         <thead>
             <tr>
+                <th>Tên phân loại</th>
                 <th>Đơn vị</th>
                 <th>Khối lượng</th>
                 <th>SKU</th>
@@ -174,6 +177,20 @@
         <tbody id="variant-list">
             @foreach ($variantRows as $index => $variant)
                 <tr class="variant-row">
+                    <td>
+                        <input
+                            type="text"
+                            name="variants[{{ $index }}][name]"
+                            value="{{ $variant['name'] ?? '' }}"
+                            placeholder="Ví dụ: Hộp 100g"
+                            required
+                        >
+
+                        @error("variants.$index.name")
+                            <span class="error">{{ $message }}</span>
+                        @enderror
+                    </td>
+
                     <td>
                         @if (!empty($variant['id']))
                             <input
@@ -312,6 +329,15 @@
 <template id="variant-template">
     <tr class="variant-row">
         <td>
+            <input
+                type="text"
+                name="variants[__INDEX__][name]"
+                placeholder="Ví dụ: Hộp 100g"
+                required
+            >
+        </td>
+
+        <td>
             <select name="variants[__INDEX__][unit_id]" required>
                 <option value="">-- Đơn vị --</option>
 
@@ -425,3 +451,8 @@
         });
     </script>
 @endpush
+
+
+
+
+

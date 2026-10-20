@@ -17,7 +17,7 @@ class ProductTest extends TestCase
 
     public function test_seller_can_create_product_with_units(): void
     {
-        Storage::fake('public');
+        Storage::fake('supabase');
 
         $seller = User::factory()->create([
             'role' => 'seller',
@@ -44,6 +44,7 @@ class ProductTest extends TestCase
                 'variants' => [
                     [
                         'unit_id' => $kilogram->id,
+                        'name' => 'Túi 1kg',
                         'sku' => 'CAM-1KG',
                         'quantity' => 1,
                         'price' => 45000,
@@ -52,6 +53,7 @@ class ProductTest extends TestCase
                     ],
                     [
                         'unit_id' => $kilogram->id,
+                        'name' => 'Túi 5kg',
                         'sku' => 'CAM-5KG',
                         'quantity' => 5,
                         'price' => 215000,
@@ -60,6 +62,7 @@ class ProductTest extends TestCase
                     ],
                     [
                         'unit_id' => $box->id,
+                        'name' => 'Thùng 10kg',
                         'sku' => 'CAM-THUNG-10KG',
                         'quantity' => 10,
                         'price' => 420000,
@@ -82,6 +85,7 @@ class ProductTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('product_variants', [
+            'name' => 'Túi 1kg',
             'sku' => 'CAM-1KG',
             'quantity' => 1,
             'price' => 45000,
@@ -89,6 +93,7 @@ class ProductTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('product_variants', [
+            'name' => 'Thùng 10kg',
             'sku' => 'CAM-THUNG-10KG',
             'quantity' => 10,
             'price' => 420000,
@@ -100,7 +105,7 @@ class ProductTest extends TestCase
         $product = Product::where('name', 'Cam Cao Phong')
             ->firstOrFail();
 
-        Storage::disk('public')->assertExists($product->image);
+        Storage::disk('supabase')->assertExists($product->image);
     }
 
     public function test_seller_can_search_only_their_own_products(): void
@@ -180,7 +185,7 @@ class ProductTest extends TestCase
 
     public function test_invalid_image_format_is_rejected(): void
     {
-        Storage::fake('public');
+        Storage::fake('supabase');
 
         $seller = User::factory()->create([
             'role' => 'seller',
@@ -253,6 +258,7 @@ class ProductTest extends TestCase
                 'variants' => [
                     [
                         'unit_id' => $unit->id,
+                        'name' => 'Túi 1kg',
                         'sku' => 'OTHER-SELLER-01',
                         'quantity' => 1,
                         'price' => 50000,
@@ -292,3 +298,4 @@ class ProductTest extends TestCase
         ]);
     }
 }
+
