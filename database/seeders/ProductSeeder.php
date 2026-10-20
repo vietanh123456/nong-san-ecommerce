@@ -48,6 +48,7 @@ class ProductSeeder extends Seeder
             'nongtraixanh@example.com',
             'dacsanviet@example.com',
             'nongsanmientay@example.com',
+            'seller@example.com',
         ];
 
         $shops = User::query()
@@ -74,6 +75,15 @@ class ProductSeeder extends Seeder
             ->keyBy('symbol');
 
         $products = [
+            // Nông Sản An Nhiên
+            ['shop' => 3, 'category' => 'trai-cay', 'name' => 'Cam Cao Phong', 'origin' => 'Cao Phong, Hòa Bình', 'price' => 45000, 'stock' => 100, 'unit' => 'kg', 'variant' => 'Túi 1kg', 'sku' => 'ANN-CAM-1KG', 'image' => 'product-11'],
+            ['shop' => 3, 'category' => 'gao-va-ngu-coc', 'name' => 'Gạo ST25', 'origin' => 'Sóc Trăng', 'price' => 180000, 'stock' => 60, 'unit' => 'kg', 'variant' => 'Túi 1kg', 'sku' => 'ST25-1KG', 'image' => 'st25-1kg'],
+            ['shop' => 3, 'category' => 'ca-phe-va-tra', 'name' => 'Cà phê Buôn Ma Thuột', 'origin' => 'Buôn Ma Thuột, Đắk Lắk', 'price' => 160000, 'stock' => 45, 'unit' => 'g', 'variant' => 'Gói 500g', 'sku' => 'ANN-CAPHE-500G', 'image' => 'product-14'],
+            ['shop' => 3, 'category' => 'mat-ong', 'name' => 'Mật ong bạc hà Hà Giang', 'origin' => 'Đồng Văn, Hà Giang', 'price' => 185000, 'stock' => 35, 'unit' => 'chai', 'variant' => 'Chai 500ml', 'sku' => 'ANN-MATONG-500ML', 'image' => 'product-15'],
+            ['shop' => 3, 'category' => 'gia-vi-va-dac-san', 'name' => 'Nước mắm Phú Quốc', 'origin' => 'Phú Quốc, Kiên Giang', 'price' => 120000, 'stock' => 50, 'unit' => 'chai', 'variant' => 'Chai 500ml', 'sku' => 'ANN-NUOCMAM-500ML', 'image' => 'product-16'],
+            ['shop' => 3, 'category' => 'ca-phe-va-tra', 'name' => 'Cà Phê Robusta Rang Xay Đắk Lắk', 'origin' => 'Buôn Ma Thuột, Đắk Lắk', 'price' => 165000, 'stock' => 99, 'unit' => 'kg', 'variant' => 'Túi 1kg', 'sku' => 'ANN-ROBUSTA-1KG', 'image' => 'ann-robusta'],
+            ['shop' => 3, 'category' => 'ca-phe-va-tra', 'name' => 'Trà Shan Tuyết', 'origin' => 'Hà Giang', 'price' => 145000, 'stock' => 40, 'unit' => 'g', 'variant' => 'Gói 100g', 'sku' => 'SHANTUYET-HG-100G-2026A', 'image' => 'shantuyet-hg-100g-2026a'],
+
             // Nông Trại Xanh Đà Lạt
             ['shop' => 0, 'category' => 'trai-cay', 'name' => 'Dâu Tây Đà Lạt', 'origin' => 'Đà Lạt, Lâm Đồng', 'price' => 145000, 'stock' => 45, 'unit' => 'kg', 'variant' => 'Hộp 1kg', 'sku' => 'NTX-DAU-1KG'],
             ['shop' => 0, 'category' => 'trai-cay', 'name' => 'Hồng Giòn Đà Lạt', 'origin' => 'Đà Lạt, Lâm Đồng', 'price' => 68000, 'stock' => 70, 'unit' => 'kg', 'variant' => 'Túi 1kg', 'sku' => 'NTX-HONG-1KG'],
@@ -148,6 +158,23 @@ class ProductSeeder extends Seeder
                 .', bảo đảm nguồn gốc rõ ràng, chất lượng ổn định '
                 .'và phù hợp cho nhu cầu sử dụng hằng ngày.';
 
+            $imageOverrides = [
+                'DSV-NUOCMAM-500ML' => 'dsv-nuocmaml',
+                'DSV-QUA-01' => 'dsv-qua-01',
+            ];
+
+            $imageStem = $item['image']
+                ?? $imageOverrides[$item['sku']]
+                ?? preg_replace(
+                    '/-(?:1KG|500G|250G|300G|5KG|500ML|1Q|2KG|1TRAI|4|01)$/',
+                    '',
+                    $item['sku']
+                );
+
+            $imagePath = 'products/catalog/'
+                .strtolower((string) $imageStem)
+                .'.webp';
+
             $product = Product::updateOrCreate(
                 ['name' => $item['name']],
                 [
@@ -157,6 +184,7 @@ class ProductSeeder extends Seeder
                     'price' => $item['price'],
                     'stock' => $item['stock'],
                     'origin' => $item['origin'],
+                    'image' => $imagePath,
                     'status' => true,
                 ]
             );

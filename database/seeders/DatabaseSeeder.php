@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Test User',
                 'phone' => '0987654321',
                 'password' => 'password',
-                'role' => 'seller',
+                'role' => 'buyer',
             ]
         );
 
