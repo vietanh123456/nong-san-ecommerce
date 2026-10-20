@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -123,13 +124,39 @@ class ProductController extends Controller
             ->paginate(12)
             ->appends($request->query());
 
+        $featuredCategories = Category::query()
+            ->where('status', true)
+            ->withCount([
+                'products' => fn ($productQuery) => $productQuery
+                    ->where('status', true),
+            ])
+            ->orderByDesc('products_count')
+            ->orderBy('name')
+            ->limit(8)
+            ->get();
+
+        $marketStats = [
+            'products' => Product::query()
+                ->where('status', true)
+                ->count(),
+            'categories' => Category::query()
+                ->where('status', true)
+                ->count(),
+            'shops' => User::query()
+                ->where('role', 'seller')
+                ->where('is_active', true)
+                ->count(),
+        ];
+
         $view = $request->routeIs('home') ? 'home' : 'products.index';
 
         return view($view, compact(
             'products',
             'categories',
             'categoryTree',
-            'selectedCategoryIds'
+            'selectedCategoryIds',
+            'featuredCategories',
+            'marketStats'
         ));
     }
 

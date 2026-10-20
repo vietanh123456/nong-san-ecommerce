@@ -26,7 +26,7 @@ class ProductPaginationTest extends TestCase
 
         $product = Product::create([
             'category_id' => $category->id,
-            'name' => 'Hạt Điều Rang Salt',
+            'name' => 'Hạt Điều Rang Muối Bình Phước',
             'description' => 'Hạt điều rang.',
             'price' => 220000,
             'stock' => 10,
@@ -131,12 +131,12 @@ class ProductPaginationTest extends TestCase
         $this->seed();
 
         $product = Product::query()
-            ->where('name', 'Hạt Điều Rang Salt')
+            ->where('name', 'Hạt Điều Rang Muối Bình Phước')
             ->firstOrFail();
 
         $this->assertDatabaseHas('products', [
             'id' => $product->id,
-            'search_name' => 'hat dieu rang salt',
+            'search_name' => 'hat dieu rang muoi binh phuoc',
         ]);
 
         $blackBeans = Product::query()
@@ -151,7 +151,7 @@ class ProductPaginationTest extends TestCase
         $this->assertSame(
             'ca-phe-va-tra',
             Product::query()
-                ->where('name', 'Cà Phê Moka Cầu Đất')
+                ->where('name', 'Cà Phê Arabica Cầu Đất')
                 ->firstOrFail()
                 ->category
                 ->slug
@@ -170,7 +170,7 @@ class ProductPaginationTest extends TestCase
             'category_id' => $grains->id,
         ]));
         $grainListing->assertOk()
-            ->assertSee('Gạo Tám Xoan Bắc Hương')
+            ->assertSee('Gạo Tám Xoan Hải Hậu')
             ->assertSee('Đậu Đen Xanh Lòng')
             ->assertDontSee('Cam Sành Hà Giang');
 
@@ -180,7 +180,7 @@ class ProductPaginationTest extends TestCase
 
         $this->get(route('home', ['search' => 'HẠT ĐIỀU']))
             ->assertOk()
-            ->assertSee('Hạt Điều Rang Salt');
+            ->assertSee('Hạt Điều Rang Muối Bình Phước');
     }
 
     public function test_product_listings_use_product_images_or_a_neutral_fallback(): void
@@ -671,4 +671,3 @@ class ProductPaginationTest extends TestCase
         }
     }
 }
-
