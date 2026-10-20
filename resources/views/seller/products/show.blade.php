@@ -134,6 +134,50 @@
         </div>
 
         <section class="section">
+            <h2>Mã QR truy xuất nguồn gốc</h2>
+            <p>
+                QR được tạo tự động khi thêm sản phẩm. Bạn có thể cập nhật
+                thông tin lô và tải chứng nhận trước khi chia sẻ cho người mua.
+            </p>
+
+            <div class="actions" style="margin-top: 16px; align-items: flex-start;">
+                @forelse ($product->batches as $batch)
+                    <div class="card" style="text-align: center;">
+                        @if ($batch->qr_url)
+                            <img
+                                src="{{ $batch->qr_url }}"
+                                width="180"
+                                height="180"
+                                alt="QR {{ $batch->batch_code }}"
+                            >
+                        @endif
+
+                        <p><strong>{{ $batch->batch_code }}</strong></p>
+
+                        <div class="actions">
+                            <a
+                                class="btn btn-secondary"
+                                href="{{ route('trace.show', $batch->batch_code) }}"
+                                target="_blank"
+                            >
+                                Mở truy xuất
+                            </a>
+
+                            <a
+                                class="btn btn-warning"
+                                href="{{ route('seller.batches.edit', $batch) }}"
+                            >
+                                Cập nhật lô
+                            </a>
+                        </div>
+                    </div>
+                @empty
+                    <p>Sản phẩm chưa có mã QR truy xuất.</p>
+                @endforelse
+            </div>
+        </section>
+
+        <section class="section">
             <h2>Đơn vị, giá và tồn kho</h2>
 
             <div class="table-wrapper">

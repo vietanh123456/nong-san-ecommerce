@@ -2,6 +2,8 @@
 
 return [
 
+    'qr_disk' => env('QR_CODE_DISK', 'public'),
+
     /*
     |--------------------------------------------------------------------------
     | Default Filesystem Disk

@@ -10,6 +10,7 @@ use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -37,6 +38,46 @@ class TraceabilityTest extends TestCase
         $response->assertRedirect(route('seller.batches.show', $batch));
         $this->assertDatabaseHas('product_batches', ['batch_code' => 'LO-CAM-001']);
         Storage::disk('public')->assertExists('qrcodes/LO-CAM-001.svg');
+    }
+
+    public function test_qr_can_be_stored_on_the_configured_supabase_disk(): void
+    {
+        config([
+            'filesystems.qr_disk' => 'supabase',
+            'traceability.public_url' => 'https://nong-san.example',
+            'services.supabase.url' => 'https://project.supabase.co',
+            'services.supabase.secret_key' => 'sb_secret_test',
+            'services.supabase.bucket' => 'product-images',
+        ]);
+        Http::fake([
+            'https://project.supabase.co/storage/v1/object/*' => Http::response(['Key' => 'product-images/qrcodes/test.svg']),
+        ]);
+
+        $seller = User::factory()->create(['role' => 'seller']);
+        $product = $this->productFor($seller);
+
+        $this->actingAs($seller)->post(route('seller.batches.store'), [
+            'product_id' => $product->id,
+            'batch_code' => 'LO-SUPABASE-001',
+            'origin' => 'Lâm Đồng',
+            'producer' => 'Nông trại Xanh',
+            'harvest_date' => '2026-10-18',
+            'packaged_date' => '2026-10-19',
+        ])->assertRedirect();
+
+        $batch = ProductBatch::where('batch_code', 'LO-SUPABASE-001')
+            ->firstOrFail();
+
+        $this->assertSame('supabase', $batch->qr_disk);
+        $this->assertSame(
+            'https://nong-san.example/trace/LO-SUPABASE-001',
+            $batch->qr_code
+        );
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && $request->url() === 'https://project.supabase.co/storage/v1/object/product-images/qrcodes/LO-SUPABASE-001.svg'
+            && $request->hasHeader('apikey', 'sb_secret_test')
+            && ! $request->hasHeader('Authorization')
+        );
     }
 
     public function test_batch_code_must_be_unique_and_other_seller_is_forbidden(): void

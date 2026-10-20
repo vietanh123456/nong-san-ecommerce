@@ -47,4 +47,10 @@ return [
             'http://127.0.0.1:8000/vnpay/return'
         ),
     ],
+
+    'supabase' => [
+        'url' => env('SUPABASE_URL'),
+        'secret_key' => env('SUPABASE_SECRET_KEY'),
+        'bucket' => env('SUPABASE_BUCKET', 'product-images'),
+    ],
 ];
