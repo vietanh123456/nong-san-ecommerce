@@ -4,6 +4,7 @@ namespace Tests\Feature\Seller;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductBatch;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -106,6 +107,14 @@ class ProductTest extends TestCase
             ->firstOrFail();
 
         Storage::disk('supabase')->assertExists($product->image);
+
+        $batch = ProductBatch::where('product_id', $product->id)
+            ->firstOrFail();
+
+        $this->assertStringStartsWith('AUTO-', $batch->batch_code);
+        $this->assertSame(config('filesystems.qr_disk', 'public'), $batch->qr_disk);
+        $this->assertSame($product->origin, $batch->origin);
+        Storage::disk($batch->qr_disk)->assertExists($batch->qr_path);
     }
 
     public function test_seller_can_search_only_their_own_products(): void
@@ -298,4 +307,3 @@ class ProductTest extends TestCase
         ]);
     }
 }
-

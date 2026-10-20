@@ -8,16 +8,22 @@ use App\Http\Requests\Seller\UpdateProductRequest;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Unit;
+use App\Services\QrCodeStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Throwable;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        private readonly QrCodeStorageService $qrCodeStorage
+    ) {}
+
     public function index(Request $request): View
     {
         $filters = $request->validate([
@@ -68,6 +74,7 @@ class ProductController extends Controller
         $data['status'] = $request->boolean('status');
 
         $imagePath = null;
+        $product = null;
 
         try {
             if ($request->hasFile('image')) {
@@ -77,7 +84,10 @@ class ProductController extends Controller
                 $data['image'] = $imagePath;
             }
 
-            DB::transaction(function () use ($data, $variants): void {
+            [$product, $batch] = DB::transaction(function () use (
+                $data,
+                $variants
+            ): array {
                 $product = Product::create($data);
 
                 foreach ($variants as $variant) {
@@ -91,8 +101,23 @@ class ProductController extends Controller
                         'status' => (bool) ($variant['status'] ?? true),
                     ]);
                 }
+
+                $batch = $product->batches()->create([
+                    'batch_code' => 'AUTO-'.Str::upper((string) Str::ulid()),
+                    'origin' => $product->origin ?: 'Đang cập nhật',
+                    'producer' => Auth::user()?->name,
+                    'production_date' => today(),
+                ]);
+
+                return [$product, $batch];
             });
+
+            $this->qrCodeStorage->store($batch);
         } catch (Throwable $exception) {
+            if ($product !== null && $product->exists) {
+                $product->delete();
+            }
+
             if ($imagePath !== null) {
                 Storage::disk('supabase')->delete($imagePath);
             }
@@ -102,14 +127,22 @@ class ProductController extends Controller
 
         return redirect()
             ->route('seller.products.index')
-            ->with('success', 'Thêm sản phẩm thành công.');
+            ->with(
+                'success',
+                'Thêm sản phẩm và tạo mã QR truy xuất thành công.'
+            );
     }
 
     public function show(Product $product): View
     {
         $this->ensureProductBelongsToSeller($product);
 
-        $product->load(['category', 'variants.unit', 'reviews.user']);
+        $product->load([
+            'category',
+            'variants.unit',
+            'reviews.user',
+            'batches' => fn ($query) => $query->latest(),
+        ]);
 
         return view('seller.products.show', compact('product'));
     }
@@ -225,6 +258,11 @@ class ProductController extends Controller
 
         $image = $product->image;
 
+        $product->load('batches');
+        $product->batches->each(
+            fn ($batch) => $this->qrCodeStorage->delete($batch)
+        );
+
         $product->delete();
 
         if ($image !== null) {
@@ -245,5 +283,3 @@ class ProductController extends Controller
         );
     }
 }
-
-

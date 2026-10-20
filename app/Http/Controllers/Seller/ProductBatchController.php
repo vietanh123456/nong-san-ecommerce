@@ -6,8 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Models\Product;
 use App\Models\ProductBatch;
-use Endroid\QrCode\QrCode;
-use Endroid\QrCode\Writer\SvgWriter;
+use App\Services\QrCodeStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,6 +15,10 @@ use Illuminate\View\View;
 
 class ProductBatchController extends Controller
 {
+    public function __construct(
+        private readonly QrCodeStorageService $qrCodeStorage
+    ) {}
+
     public function index(): View
     {
         $batches = ProductBatch::query()->with('product')
@@ -36,7 +39,14 @@ class ProductBatchController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $batch = ProductBatch::create($this->validatedData($request));
-        $this->generateQr($batch);
+
+        try {
+            $this->qrCodeStorage->store($batch);
+        } catch (\Throwable $exception) {
+            $batch->delete();
+
+            throw $exception;
+        }
 
         return redirect()->route('seller.batches.show', $batch)
             ->with('success', 'Tạo lô hàng và mã QR thành công.');
@@ -62,8 +72,14 @@ class ProductBatchController extends Controller
     public function update(Request $request, ProductBatch $batch): RedirectResponse
     {
         $this->ensureOwned($batch);
+        $oldQrPath = $batch->qr_path;
+        $oldQrDisk = $batch->qr_disk;
         $batch->update($this->validatedData($request, $batch));
-        $this->generateQr($batch->fresh());
+        $this->qrCodeStorage->replace(
+            $batch->fresh(),
+            $oldQrPath,
+            $oldQrDisk
+        );
 
         return redirect()->route('seller.batches.show', $batch)
             ->with('success', 'Cập nhật lô hàng thành công.');
@@ -72,7 +88,7 @@ class ProductBatchController extends Controller
     public function destroy(ProductBatch $batch): RedirectResponse
     {
         $this->ensureOwned($batch);
-        Storage::disk('public')->delete($batch->qr_path);
+        $this->qrCodeStorage->delete($batch);
         $batch->certificates()->each(function (Certificate $certificate): void {
             Storage::disk('local')->delete($certificate->file_path);
             Storage::disk('public')->delete($certificate->file_path);
@@ -120,14 +136,5 @@ class ProductBatchController extends Controller
     private function ensureOwned(ProductBatch $batch): void
     {
         abort_unless($batch->product()->where('seller_id', auth()->id())->exists(), 403);
-    }
-
-    private function generateQr(ProductBatch $batch): void
-    {
-        $url = route('trace.show', $batch->batch_code);
-        $path = 'qrcodes/'.$batch->batch_code.'.svg';
-        $svg = (new SvgWriter)->write(new QrCode(data: $url))->getString();
-        Storage::disk('public')->put($path, $svg);
-        $batch->update(['qr_code' => $url, 'qr_path' => $path]);
     }
 }
