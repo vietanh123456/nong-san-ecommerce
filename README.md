@@ -65,7 +65,6 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Không commit `.env`. Mỗi thành viên tự tạo `.env` riêng và không chia sẻ `APP_KEY`, mật khẩu database, Supabase Secret Key, ngrok authtoken hoặc khóa thanh toán.
 
 ### 4. Cấu hình ứng dụng
 
@@ -136,7 +135,6 @@ Tài khoản dữ liệu mẫu:
 | Quản trị viên | `admin@gmail.com` | `password` |
 | Người bán mẫu | `test@example.com` | `password` |
 
-Các tài khoản và mật khẩu trên chỉ dành cho phát triển. Không giữ chúng trên môi trường production.
 
 ### 7. Build frontend
 
@@ -254,7 +252,6 @@ Trong Ngrok Dashboard, mở **Domains** và lấy dev domain được cấp, th�
 https://example.ngrok-free.dev
 ```
 
-Dev domain này thuộc tài khoản ngrok của từng thành viên. Không dùng chung authtoken cá nhân.
 
 ### 4. Cấu hình Laravel
 
