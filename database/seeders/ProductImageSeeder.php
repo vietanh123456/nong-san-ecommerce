@@ -12,138 +12,168 @@ class ProductImageSeeder extends Seeder
 {
     public function run(): void
     {
-        $palettes = [
-            'trai-cay' => ['#fff7ed', '#fb923c', '#c2410c'],
-            'rau-cu' => ['#f0fdf4', '#22c55e', '#166534'],
-            'gao-va-ngu-coc' => ['#fffbeb', '#eab308', '#854d0e'],
-            'ca-phe-va-tra' => ['#fefce8', '#92400e', '#451a03'],
-            'mat-ong' => ['#fffbeb', '#f59e0b', '#92400e'],
-            'gia-vi-va-dac-san' => ['#fff1f2', '#e11d48', '#881337'],
-            'hat-va-qua-kho' => ['#fef3c7', '#b45309', '#78350f'],
-            'thuc-pham-kho' => ['#fafaf9', '#78716c', '#292524'],
-            'nam' => ['#faf5ff', '#a855f7', '#6b21a8'],
-            'banh-va-dac-san' => ['#fff7ed', '#f97316', '#9a3412'],
-            'thuy-hai-san' => ['#eff6ff', '#3b82f6', '#1e40af'],
-            'thit-va-san-pham-che-bien' => ['#fef2f2', '#ef4444', '#991b1b'],
-            'do-uong' => ['#ecfeff', '#06b6d4', '#155e75'],
-            'san-pham-huu-co' => ['#ecfdf5', '#10b981', '#065f46'],
-            'qua-bieu-va-combo' => ['#fdf4ff', '#d946ef', '#86198f'],
+        $imageDirectory = base_path('product-images');
+
+        if (!is_dir($imageDirectory)) {
+            throw new RuntimeException(
+                "Không tìm thấy thư mục ảnh: {$imageDirectory}"
+            );
+        }
+
+        $imageFiles = collect(
+            glob($imageDirectory.DIRECTORY_SEPARATOR.'*.webp') ?: []
+        )->mapWithKeys(function (string $path): array {
+            $stem = Str::upper(
+                pathinfo($path, PATHINFO_FILENAME)
+            );
+
+            return [$stem => $path];
+        });
+
+        if ($imageFiles->isEmpty()) {
+            throw new RuntimeException(
+                'Không tìm thấy ảnh WEBP trong thư mục product-images.'
+            );
+        }
+
+        /*
+         * Những sản phẩm cũ chưa có SKU được ghép bằng tên sản phẩm.
+         */
+        $manualImages = [
+            'Cam Cao Phong' => 'PRODUCT-11',
+            'Cà phê Buôn Ma Thuột' => 'PRODUCT-14',
+            'Mật ong bạc hà Hà Giang' => 'PRODUCT-15',
+            'Nước mắm Phú Quốc' => 'PRODUCT-16',
+        ];
+
+        /*
+         * Tên ảnh này có thêm chữ L so với SKU trong cơ sở dữ liệu.
+         */
+        $stemAliases = [
+            'DSV-NUOCMAML' => 'DSV-NUOCMAM',
         ];
 
         $products = Product::query()
-            ->with('category')
+            ->with('variants')
             ->orderBy('id')
             ->get();
 
+        $assignments = collect();
+        $missingProducts = collect();
+
         foreach ($products as $product) {
-            $categorySlug = $product->category?->slug ?? 'nong-san';
+            $matchedStem = $manualImages[$product->name] ?? null;
 
-            [$background, $accent, $dark] = $palettes[$categorySlug]
-                ?? ['#ecfdf5', '#10b981', '#065f46'];
+            if ($matchedStem === null) {
+                $sku = Str::upper(
+                    (string) $product->variants->first()?->sku
+                );
 
-            $name = htmlspecialchars(
-                $product->name,
-                ENT_QUOTES | ENT_XML1,
-                'UTF-8'
+                if ($sku !== '') {
+                    $matchedStem = $imageFiles
+                        ->keys()
+                        ->first(function (string $stem) use (
+                            $sku,
+                            $stemAliases
+                        ): bool {
+                            $comparisonStem = $stemAliases[$stem]
+                                ?? $stem;
+
+                            return $sku === $comparisonStem
+                                || Str::startsWith(
+                                    $sku,
+                                    $comparisonStem.'-'
+                                );
+                        });
+                }
+            }
+
+            if (
+                $matchedStem === null
+                || !$imageFiles->has($matchedStem)
+            ) {
+                $missingProducts->push(
+                    "{$product->id}: {$product->name}"
+                );
+
+                continue;
+            }
+
+            $assignments->put($product->id, [
+                'product' => $product,
+                'stem' => $matchedStem,
+                'source' => $imageFiles->get($matchedStem),
+            ]);
+        }
+
+        if ($missingProducts->isNotEmpty()) {
+            throw new RuntimeException(
+                'Chưa tìm thấy ảnh cho sản phẩm: '
+                .$missingProducts->implode('; ')
             );
+        }
 
-            $categoryName = htmlspecialchars(
-                $product->category?->name ?? 'Nông sản Việt',
-                ENT_QUOTES | ENT_XML1,
-                'UTF-8'
+        if ($assignments->count() !== $products->count()) {
+            throw new RuntimeException(
+                'Số ảnh đã ghép không bằng số sản phẩm.'
             );
+        }
 
-            $origin = htmlspecialchars(
-                $product->origin ?: 'Việt Nam',
-                ENT_QUOTES | ENT_XML1,
-                'UTF-8'
+        $duplicateStems = $assignments
+            ->pluck('stem')
+            ->duplicates();
+
+        if ($duplicateStems->isNotEmpty()) {
+            throw new RuntimeException(
+                'Ảnh bị ghép trùng: '
+                .$duplicateStems->implode(', ')
             );
+        }
 
-            $words = preg_split('/\s+/u', trim($product->name)) ?: [];
-            $middle = max(1, (int) ceil(count($words) / 2));
+        $unusedImages = $imageFiles
+            ->keys()
+            ->diff($assignments->pluck('stem'));
 
-            $lineOne = htmlspecialchars(
-                implode(' ', array_slice($words, 0, $middle)),
-                ENT_QUOTES | ENT_XML1,
-                'UTF-8'
+        if ($unusedImages->isNotEmpty()) {
+            throw new RuntimeException(
+                'Ảnh chưa được sử dụng: '
+                .$unusedImages->implode(', ')
             );
+        }
 
-            $lineTwo = htmlspecialchars(
-                implode(' ', array_slice($words, $middle)),
-                ENT_QUOTES | ENT_XML1,
-                'UTF-8'
-            );
+        $disk = Storage::disk('supabase');
+        $uploadedCount = 0;
 
-            $svg = <<<SVG
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
-    <defs>
-        <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="{$background}"/>
-            <stop offset="100%" stop-color="#ffffff"/>
-        </linearGradient>
-        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="{$dark}" flood-opacity="0.16"/>
-        </filter>
-    </defs>
+        foreach ($assignments as $assignment) {
+            /** @var Product $product */
+            $product = $assignment['product'];
+            $source = $assignment['source'];
 
-    <rect width="1200" height="900" rx="48" fill="url(#background)"/>
+            $remotePath = 'products/catalog/'
+                .Str::lower($assignment['stem'])
+                .'.webp';
 
-    <circle cx="1020" cy="120" r="190" fill="{$accent}" opacity="0.10"/>
-    <circle cx="110" cy="800" r="230" fill="{$accent}" opacity="0.08"/>
+            $stream = fopen($source, 'rb');
 
-    <g filter="url(#shadow)">
-        <rect x="250" y="105" width="700" height="410" rx="64" fill="#ffffff"/>
-    </g>
+            if ($stream === false) {
+                throw new RuntimeException(
+                    "Không thể đọc ảnh: {$source}"
+                );
+            }
 
-    <ellipse cx="600" cy="438" rx="235" ry="42" fill="{$dark}" opacity="0.10"/>
-
-    <g transform="translate(600 305)">
-        <path d="M0 125 C-155 78 -205 -35 -142 -128 C-30 -120 44 -58 0 125Z"
-              fill="{$accent}" opacity="0.92"/>
-        <path d="M0 125 C145 85 204 -26 150 -118 C35 -116 -38 -48 0 125Z"
-              fill="{$dark}" opacity="0.82"/>
-        <path d="M0 120 C-7 45 5 -43 80 -117"
-              fill="none" stroke="#ffffff" stroke-width="15" stroke-linecap="round" opacity="0.85"/>
-        <circle cx="0" cy="125" r="72" fill="{$accent}"/>
-        <circle cx="-23" cy="101" r="18" fill="#ffffff" opacity="0.40"/>
-    </g>
-
-    <rect x="96" y="72" width="250" height="54" rx="27" fill="{$accent}"/>
-    <text x="221" y="108" text-anchor="middle"
-          font-family="Arial, sans-serif" font-size="24" font-weight="700"
-          fill="#ffffff">{$categoryName}</text>
-
-    <text x="600" y="625" text-anchor="middle"
-          font-family="Arial, sans-serif" font-size="52" font-weight="800"
-          fill="{$dark}">{$lineOne}</text>
-
-    <text x="600" y="690" text-anchor="middle"
-          font-family="Arial, sans-serif" font-size="52" font-weight="800"
-          fill="{$dark}">{$lineTwo}</text>
-
-    <text x="600" y="762" text-anchor="middle"
-          font-family="Arial, sans-serif" font-size="27"
-          fill="#64748b">Nguồn gốc: {$origin}</text>
-
-    <text x="600" y="824" text-anchor="middle"
-          font-family="Arial, sans-serif" font-size="23" font-weight="700"
-          letter-spacing="4" fill="{$accent}">NÔNG SẢN VIỆT</text>
-
-    <title>{$name}</title>
-</svg>
-SVG;
-
-            $path = 'products/demo/'
-                .$product->id.'-'.Str::slug($product->name).'.svg';
-
-            $uploaded = Storage::disk('supabase')->put(
-                $path,
-                $svg,
-                [
-                    'ContentType' => 'image/svg+xml',
-                    'CacheControl' => 'public, max-age=31536000',
-                ]
-            );
+            try {
+                $uploaded = $disk->put(
+                    $remotePath,
+                    $stream,
+                    [
+                        'visibility' => 'public',
+                        'ContentType' => 'image/webp',
+                        'CacheControl' => 'public, max-age=31536000',
+                    ]
+                );
+            } finally {
+                fclose($stream);
+            }
 
             if (!$uploaded) {
                 throw new RuntimeException(
@@ -154,20 +184,28 @@ SVG;
             $oldImage = $product->image;
 
             $product->update([
-                'image' => $path,
+                'image' => $remotePath,
             ]);
 
             if (
                 $oldImage
-                && $oldImage !== $path
-                && Str::startsWith($oldImage, 'products/demo/')
+                && $oldImage !== $remotePath
+                && (
+                    Str::startsWith($oldImage, 'products/demo/')
+                    || Str::startsWith(
+                        $oldImage,
+                        'products/catalog/'
+                    )
+                )
             ) {
-                Storage::disk('supabase')->delete($oldImage);
+                $disk->delete($oldImage);
             }
+
+            $uploadedCount++;
         }
 
         $this->command?->info(
-            'Đã tạo ảnh cho '.$products->count().' sản phẩm.'
+            "Đã tải {$uploadedCount} ảnh thật lên Supabase."
         );
     }
 }

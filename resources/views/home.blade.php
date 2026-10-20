@@ -4,7 +4,11 @@
 <div class="bg-slate-50 pb-14">
 
     {{-- Banner --}}
-    <section class="relative overflow-hidden bg-gradient-to-br from-[#064e3b] via-[#0e6b43] to-[#16a34a] text-white">
+    <section
+        class="relative overflow-hidden bg-cover bg-center text-white"
+        style="background-image: url('{{ asset('images/home-hero.png') }}');"
+    >
+        <div class="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-900/80 to-emerald-900/20"></div>
         <div class="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/10"></div>
         <div class="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-emerald-300/10"></div>
 

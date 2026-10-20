@@ -15,7 +15,11 @@
     <div class="w-full max-w-[1000px] bg-white rounded-[32px] shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-2 min-h-[650px]">
         
         <!-- CỘT BÊN TRÁI: BANNER -->
-        <div class="bg-[#0e5c36] text-white p-10 flex flex-col justify-between relative overflow-hidden min-h-[500px] lg:min-h-auto">
+        <div
+            class="relative flex min-h-[500px] flex-col justify-between overflow-hidden bg-[#0e5c36] bg-cover bg-center p-10 text-white lg:min-h-0"
+            style="background-image: url('{{ asset('images/login-hero.png') }}');"
+        >
+            <div class="absolute inset-0 bg-gradient-to-b from-emerald-950/75 via-emerald-900/75 to-emerald-950/95"></div>
             <div class="relative z-10">
                 <div class="w-12 h-12 border border-white/30 rounded-xl flex items-center justify-center font-bold text-sm mb-12 tracking-wider">
                     MN
