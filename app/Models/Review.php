@@ -17,6 +17,7 @@ class Review extends Model
         'guest_name',
         'rating',
         'comment',
+        'image',
         'seller_reply',
         'seller_replied_at',
         'status',

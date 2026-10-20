@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Review;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ReviewController extends Controller
 {
@@ -26,6 +27,22 @@ class ReviewController extends Controller
             );
         }
 
+        $imagePath = null;
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request
+                ->file('image')
+                ->store('reviews', 'supabase');
+
+            if ($imagePath === false) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'image' => 'Không thể tải ảnh lên. Vui lòng thử lại.',
+                    ]);
+            }
+        }
+
         $reviewData = [
             'rating' => $request->integer('rating'),
             'comment' => $request->filled('comment')
@@ -36,7 +53,18 @@ class ReviewController extends Controller
             'moderated_at' => null,
         ];
 
+        if ($imagePath !== null) {
+            $reviewData['image'] = $imagePath;
+        }
+
         if ($user !== null) {
+            $existingReview = Review::query()
+                ->where('product_id', $product->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            $oldImage = $existingReview?->image;
+
             Review::updateOrCreate(
                 [
                     'product_id' => $product->id,
@@ -46,6 +74,14 @@ class ReviewController extends Controller
                     'guest_name' => null,
                 ])
             );
+
+            if (
+                $imagePath !== null
+                && $oldImage
+                && $oldImage !== $imagePath
+            ) {
+                Storage::disk('supabase')->delete($oldImage);
+            }
         } else {
             Review::create(array_merge($reviewData, [
                 'product_id' => $product->id,
@@ -76,13 +112,20 @@ class ReviewController extends Controller
             'Bạn chỉ có thể xóa đánh giá của chính mình.'
         );
 
+        $imagePath = $review->image;
+
         $review->delete();
+
+        if ($imagePath) {
+            Storage::disk('supabase')->delete($imagePath);
+        }
 
         return back()->with(
             'success',
             'Đánh giá của bạn đã được xóa.'
         );
     }
+
     public function reply(
         Request $request,
         Review $review
@@ -147,4 +190,3 @@ class ReviewController extends Controller
         );
     }
 }
-

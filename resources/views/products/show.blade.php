@@ -151,6 +151,7 @@
         <form
             action="{{ route('reviews.store', $product) }}"
             method="POST"
+            enctype="multipart/form-data"
             class="space-y-4"
         >
             @csrf
@@ -251,6 +252,35 @@
                 @enderror
             </div>
 
+            <div>
+                <label
+                    for="review_image"
+                    class="block text-sm font-bold text-gray-700 mb-2"
+                >
+                    Ảnh đánh giá
+                    <span class="font-normal text-gray-400">
+                        (không bắt buộc)
+                    </span>
+                </label>
+
+                <input
+                    id="review_image"
+                    name="image"
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    class="block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
+                >
+
+                <p class="mt-1 text-xs text-gray-400">
+                    JPG, JPEG, PNG hoặc WEBP; tối đa 2 MB.
+                </p>
+
+                @error('image')
+                    <p class="mt-1 text-sm text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
+            </div>
             <button
                 type="submit"
                 class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl text-sm transition"
@@ -310,6 +340,22 @@
                                 {{ $review->comment }}
                             </p>
                         @endif
+                    @if ($review->image)
+                        <div class="mt-4">
+                            <a
+                                href="{{ \Illuminate\Support\Facades\Storage::disk('supabase')->url($review->image) }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-block"
+                            >
+                                <img
+                                    src="{{ \Illuminate\Support\Facades\Storage::disk('supabase')->url($review->image) }}"
+                                    alt="Ảnh đính kèm đánh giá"
+                                    class="h-28 w-28 rounded-xl border border-gray-200 object-cover transition hover:opacity-90"
+                                >
+                            </a>
+                        </div>
+                    @endif
                     @auth
                         @if (
                             $review->user_id !== null
@@ -443,6 +489,3 @@
     </div>
 </div>
 @endsection
-
-
-
