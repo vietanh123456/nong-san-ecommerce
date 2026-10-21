@@ -21,6 +21,7 @@ class BackfillProductBatchQrCodes extends Command
     public function handle(QrCodeStorageService $qrCodeStorage): int
     {
         $productIds = Product::query()
+            ->where('status', true)
             ->doesntHave('batches')
             ->when(
                 $this->option('product'),
@@ -52,6 +53,7 @@ class BackfillProductBatchQrCodes extends Command
 
         foreach ($productIds as $productId) {
             $product = Product::query()
+                ->where('status', true)
                 ->with('seller:id,name')
                 ->find($productId);
 

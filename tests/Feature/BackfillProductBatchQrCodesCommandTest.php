@@ -33,7 +33,18 @@ class BackfillProductBatchQrCodesCommandTest extends TestCase
             'status' => true,
         ]);
         $missingBatch = $this->productFor($seller, $category, 'Cam Cao Phong');
-        $existingBatch = $this->productFor($seller, $category, 'Bưởi Da Xanh');
+        $hiddenProduct = $this->productFor(
+            $seller,
+            $category,
+            'Sản phẩm đã ẩn'
+        );
+        $hiddenProduct->update(['status' => false]);
+
+        $existingBatch = $this->productFor(
+            $seller,
+            $category,
+            'Bưởi Da Xanh'
+        );
         ProductBatch::create([
             'product_id' => $existingBatch->id,
             'batch_code' => 'LO-DA-CO',
@@ -58,6 +69,7 @@ class BackfillProductBatchQrCodesCommandTest extends TestCase
         );
         Storage::disk('public')->assertExists($batch->qr_path);
         $this->assertSame(1, $existingBatch->batches()->count());
+        $this->assertSame(0, $hiddenProduct->batches()->count());
 
         $this->artisan('qr:backfill')
             ->expectsOutput('Không có sản phẩm nào cần tạo lô và QR.')
