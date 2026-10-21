@@ -188,6 +188,27 @@ Kiểm tra lại cấu hình sau khi sửa `.env`:
 php artisan optimize:clear
 ```
 
+Với sản phẩm được import trực tiếp từ SQL và chưa có lô hàng, xem trước
+số lượng cần xử lý:
+
+```bash
+php artisan qr:backfill --dry-run
+```
+
+Tạo lô và QR cho tất cả sản phẩm chưa có lô:
+
+```bash
+php artisan qr:backfill
+```
+
+Chỉ xử lý một ID sản phẩm:
+
+```bash
+php artisan qr:backfill --product=123
+```
+
+Lệnh có thể chạy lại an toàn vì sẽ bỏ qua sản phẩm đã có lô hàng.
+
 Tạo lại QR của một lô:
 
 ```bash
