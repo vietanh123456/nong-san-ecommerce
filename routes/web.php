@@ -49,6 +49,11 @@ Route::redirect('/home', '/');
 Route::get('/products', [CustomerProductController::class, 'index'])
     ->name('products.index');
 
+Route::get(
+    '/products/suggestions',
+    [CustomerProductController::class, 'suggestions']
+)->name('products.suggestions');
+
 Route::get('/products/{id}', [CustomerProductController::class, 'show'])
     ->name('products.show');
 
@@ -421,6 +426,3 @@ Route::middleware(['auth'])
     });
 Route::get('/vnpay/ipn', [CheckoutController::class, 'vnpayIpn'])
     ->name('vnpay.ipn');
-
-
-

@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -124,6 +125,64 @@ class ProductController extends Controller
             ->paginate(12)
             ->appends($request->query());
 
+        $recommendedProducts = collect();
+
+        if (
+            filled($filters['search'] ?? null)
+            && $products->total() === 0
+        ) {
+            $normalizedSearch = Product::normalizeSearchText(
+                $filters['search']
+            );
+
+            $searchTerms = collect(
+                preg_split('/\s+/', $normalizedSearch) ?: []
+            )
+                ->filter(
+                    fn (string $term): bool => mb_strlen($term) >= 2
+                )
+                ->unique()
+                ->values();
+
+            $recommendationQuery = Product::query()
+                ->with('category')
+                ->where('status', true);
+
+            if ($searchTerms->isNotEmpty()) {
+                $recommendationQuery->where(
+                    function ($termQuery) use ($searchTerms): void {
+                        foreach ($searchTerms as $term) {
+                            $pattern = '%'.$term.'%';
+
+                            $termQuery
+                                ->orWhere('search_name', 'like', $pattern)
+                                ->orWhere(
+                                    'search_description',
+                                    'like',
+                                    $pattern
+                                );
+                        }
+                    }
+                );
+            }
+
+            $recommendedProducts = $recommendationQuery
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->limit(6)
+                ->get();
+
+            if ($recommendedProducts->isEmpty()) {
+                $recommendedProducts = Product::query()
+                    ->with('category')
+                    ->where('status', true)
+                    ->orderByDesc('created_at')
+                    ->orderByDesc('id')
+                    ->limit(6)
+                    ->get();
+            }
+        }
+
         $featuredCategories = Category::query()
             ->where('status', true)
             ->withCount([
@@ -156,8 +215,57 @@ class ProductController extends Controller
             'categoryTree',
             'selectedCategoryIds',
             'featuredCategories',
-            'marketStats'
+            'marketStats',
+            'recommendedProducts'
         ));
+    }
+
+    public function suggestions(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $search = trim($validated['search'] ?? '');
+
+        if (mb_strlen($search) < 2) {
+            return response()->json([
+                'data' => [],
+            ]);
+        }
+
+        $suggestions = Product::query()
+            ->with('category:id,name')
+            ->where('status', true)
+            ->search($search)
+            ->orderBy('name')
+            ->limit(8)
+            ->get([
+                'id',
+                'category_id',
+                'name',
+                'price',
+            ])
+            ->map(
+                fn (Product $product): array => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'category' => $product->category?->name
+                        ?? 'Nông sản',
+                    'price' => number_format(
+                        (float) $product->price,
+                        0,
+                        ',',
+                        '.'
+                    ).'đ',
+                    'url' => route('products.show', $product->id),
+                ]
+            )
+            ->values();
+
+        return response()->json([
+            'data' => $suggestions,
+        ]);
     }
 
     public function show(int $id): View
@@ -165,6 +273,9 @@ class ProductController extends Controller
         $product = Product::query()
             ->with([
                 'category',
+                'batches' => function ($query): void {
+                    $query->latest('id');
+                },
                 'reviews' => function ($query): void {
                     $query
                         ->approved()
@@ -174,6 +285,8 @@ class ProductController extends Controller
             ])
             ->where('status', true)
             ->findOrFail($id);
+
+        $latestBatch = $product->batches->first();
 
         $reviewCount = $product->reviews->count();
 
@@ -185,6 +298,7 @@ class ProductController extends Controller
             'products.show',
             compact(
                 'product',
+                'latestBatch',
                 'reviewCount',
                 'averageRating'
             )

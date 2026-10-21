@@ -670,4 +670,70 @@ class ProductPaginationTest extends TestCase
                 ->assertSeeText('Xóa bộ lọc / Xem tất cả');
         }
     }
-}
+
+    public function test_search_suggestions_exclude_hidden_products(): void
+    {
+        $category = Category::create([
+            'name' => 'Cà phê thử nghiệm',
+            'slug' => 'ca-phe-thu-nghiem',
+            'status' => true,
+        ]);
+
+        $visibleProduct = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Cà Phê Arabica Đặc Biệt',
+            'description' => 'Cà phê rang xay nguyên chất.',
+            'price' => 175000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+
+        Product::create([
+            'category_id' => $category->id,
+            'name' => 'Cà Phê Đã Ẩn',
+            'description' => 'Sản phẩm không được đề xuất.',
+            'price' => 99000,
+            'stock' => 10,
+            'status' => false,
+        ]);
+
+        $this->getJson(route('products.suggestions', [
+            'search' => 'ca phe',
+        ]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $visibleProduct->id)
+            ->assertJsonPath(
+                'data.0.name',
+                'Cà Phê Arabica Đặc Biệt'
+            );
+    }
+
+    public function test_home_recommends_products_when_search_has_no_exact_result(): void
+    {
+        $category = Category::create([
+            'name' => 'Đồ uống thử nghiệm',
+            'slug' => 'do-uong-thu-nghiem',
+            'status' => true,
+        ]);
+
+        Product::create([
+            'category_id' => $category->id,
+            'name' => 'Cà Phê Robusta Gợi Ý',
+            'description' => 'Cà phê sạch từ Tây Nguyên.',
+            'price' => 145000,
+            'stock' => 10,
+            'status' => true,
+        ]);
+
+        $this->get(route('home', [
+            'search' => 'ca phe khong ton tai',
+        ]))
+            ->assertOk()
+            ->assertSee(
+                'Không tìm thấy sản phẩm nào phù hợp',
+                false
+            )
+            ->assertSee('Sản phẩm đề xuất', false)
+            ->assertSee('Cà Phê Robusta Gợi Ý', false);
+    }}

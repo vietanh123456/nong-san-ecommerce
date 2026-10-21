@@ -613,7 +613,7 @@
                             </div>
                         </article>
                     @empty
-                        <div class="col-span-full rounded-2xl border border-gray-100 bg-white px-6 py-16 text-center shadow-sm">
+                        <div class="col-span-full rounded-2xl border border-gray-100 bg-white px-6 py-12 text-center shadow-sm">
                             <div class="text-6xl">🔍</div>
 
                             <p class="mt-4 font-bold text-gray-800">
@@ -624,12 +624,71 @@
                                 @endif
                             </p>
 
+                            <p class="mt-2 text-sm text-gray-500">
+                                Hãy thử từ khóa ngắn hơn hoặc tham khảo các sản phẩm được đề xuất bên dưới.
+                            </p>
+
                             <a
                                 href="{{ route('home') }}"
                                 class="mt-5 inline-flex rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800"
                             >
                                 Xóa bộ lọc / Xem tất cả
                             </a>
+
+                            @if (
+                                request('search')
+                                && $recommendedProducts->isNotEmpty()
+                            )
+                                <div class="mt-10 border-t border-gray-100 pt-8 text-left">
+                                    <div class="mb-5 flex items-center justify-between gap-4">
+                                        <div>
+                                            <p class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
+                                                Có thể bạn quan tâm
+                                            </p>
+
+                                            <h3 class="mt-1 text-xl font-bold text-gray-900">
+                                                Sản phẩm đề xuất
+                                            </h3>
+                                        </div>
+
+                                        <a
+                                            href="{{ route('home') }}"
+                                            class="text-sm font-semibold text-emerald-700 hover:text-emerald-900"
+                                        >
+                                            Xem tất cả →
+                                        </a>
+                                    </div>
+
+                                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                        @foreach ($recommendedProducts as $recommendedProduct)
+                                            <a
+                                                href="{{ route('products.show', $recommendedProduct->id) }}"
+                                                class="group overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 transition hover:-translate-y-1 hover:border-emerald-200 hover:bg-white hover:shadow-lg"
+                                            >
+                                                <div class="flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-50 to-lime-50 p-3">
+                                                    @include('products._image', [
+                                                        'product' => $recommendedProduct,
+                                                    ])
+                                                </div>
+
+                                                <div class="p-4">
+                                                    <p class="text-xs font-semibold text-emerald-700">
+                                                        {{ $recommendedProduct->category->name ?? 'Nông sản' }}
+                                                    </p>
+
+                                                    <h4 class="mt-1 line-clamp-2 font-bold text-gray-900 group-hover:text-emerald-800">
+                                                        {{ $recommendedProduct->name }}
+                                                    </h4>
+
+                                                    <p class="mt-2 font-extrabold text-orange-600">
+                                                        {{ number_format((float) $recommendedProduct->price, 0, ',', '.') }}đ
+                                                    </p>
+                                                </div>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     @endforelse
                 </div>
@@ -688,4 +747,157 @@
         </div>
     </section>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const suggestionEndpoint = @json(
+        route('products.suggestions', [], false)
+    );
+
+    const searchInputs = document.querySelectorAll(
+        'input[type="search"][name="search"]'
+    );
+
+    searchInputs.forEach((input) => {
+        const wrapper = input.parentElement;
+
+        if (!wrapper || wrapper.dataset.suggestionsReady === 'true') {
+            return;
+        }
+
+        wrapper.dataset.suggestionsReady = 'true';
+        wrapper.classList.add('relative');
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('aria-autocomplete', 'list');
+
+        const dropdown = document.createElement('div');
+        dropdown.className =
+            'absolute left-0 right-0 top-full z-[70] mt-2 hidden ' +
+            'max-h-96 overflow-y-auto rounded-2xl border border-gray-100 ' +
+            'bg-white p-2 text-left shadow-2xl';
+
+        wrapper.appendChild(dropdown);
+
+        let timer = null;
+        let requestController = null;
+
+        const closeDropdown = () => {
+            dropdown.classList.add('hidden');
+            dropdown.replaceChildren();
+        };
+
+        const showMessage = (message) => {
+            const text = document.createElement('p');
+            text.className = 'px-4 py-3 text-sm text-gray-500';
+            text.textContent = message;
+
+            dropdown.replaceChildren(text);
+            dropdown.classList.remove('hidden');
+        };
+
+        const renderSuggestions = (suggestions) => {
+            dropdown.replaceChildren();
+
+            if (suggestions.length === 0) {
+                showMessage('Không có sản phẩm gợi ý.');
+                return;
+            }
+
+            suggestions.forEach((suggestion) => {
+                const link = document.createElement('a');
+                link.href = suggestion.url;
+                link.className =
+                    'flex items-center justify-between gap-4 rounded-xl ' +
+                    'px-4 py-3 transition hover:bg-emerald-50';
+
+                const information = document.createElement('span');
+                information.className = 'min-w-0';
+
+                const name = document.createElement('strong');
+                name.className =
+                    'block truncate text-sm text-gray-900';
+                name.textContent = suggestion.name;
+
+                const category = document.createElement('small');
+                category.className =
+                    'mt-1 block truncate text-xs text-gray-500';
+                category.textContent = suggestion.category;
+
+                const price = document.createElement('strong');
+                price.className =
+                    'shrink-0 text-sm text-orange-600';
+                price.textContent = suggestion.price;
+
+                information.append(name, category);
+                link.append(information, price);
+                dropdown.appendChild(link);
+            });
+
+            dropdown.classList.remove('hidden');
+        };
+
+        const loadSuggestions = async () => {
+            const search = input.value.trim();
+
+            if (search.length < 2) {
+                closeDropdown();
+                return;
+            }
+
+            requestController?.abort();
+            requestController = new AbortController();
+
+            showMessage('Đang tìm sản phẩm...');
+
+            const url = new URL(
+                suggestionEndpoint,
+                window.location.origin
+            );
+            url.searchParams.set('search', search);
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                    signal: requestController.signal,
+                });
+
+                if (!response.ok) {
+                    throw new Error('Suggestion request failed.');
+                }
+
+                const result = await response.json();
+                renderSuggestions(result.data ?? []);
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    closeDropdown();
+                }
+            }
+        };
+
+        input.addEventListener('input', () => {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(loadSuggestions, 250);
+        });
+
+        input.addEventListener('focus', () => {
+            if (input.value.trim().length >= 2) {
+                loadSuggestions();
+            }
+        });
+
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeDropdown();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!wrapper.contains(event.target)) {
+                closeDropdown();
+            }
+        });
+    });
+});
+</script>
 @endsection

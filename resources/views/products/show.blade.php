@@ -59,17 +59,70 @@
                     </p>
                 </div>
 
-                <div class="text-sm text-gray-600 mb-6">
-                    <p>
-                        <strong>Xuất xứ:</strong>
-                        {{ $product->origin ?? 'Đang cập nhật' }}
-                    </p>
+                <div class="mb-6">
+                @if ($latestBatch)
+                    @php
+                        $traceUrl = $latestBatch->qr_code
+                            ?: url('/trace/'.$latestBatch->batch_code);
+                    @endphp
 
-                    <p class="mt-2">
-                        <strong>Tồn kho:</strong>
-                        {{ $product->stock ?? 0 }}
-                    </p>
-                </div>
+                    <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                            @if ($latestBatch->qr_url)
+                                <a
+                                    href="{{ $traceUrl }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="mx-auto flex h-32 w-32 shrink-0 items-center justify-center rounded-xl border border-emerald-100 bg-white p-2 shadow-sm sm:mx-0"
+                                >
+                                    <img
+                                        src="{{ $latestBatch->qr_url }}"
+                                        alt="Mã QR lô {{ $latestBatch->batch_code }}"
+                                        class="h-full w-full object-contain"
+                                    >
+                                </a>
+                            @endif
+
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                                    Truy xuất nguồn gốc
+                                </p>
+
+                                <h3 class="mt-1 font-bold text-gray-900">
+                                    Mã QR lô hàng
+                                </h3>
+
+                                <p class="mt-2 break-all font-mono text-xs text-gray-600">
+                                    {{ $latestBatch->batch_code }}
+                                </p>
+
+                                <p class="mt-2 text-xs leading-5 text-gray-500">
+                                    Quét mã để xem nguồn gốc, nhà sản xuất
+                                    và thông tin chi tiết của lô hàng.
+                                </p>
+
+                                <a
+                                    href="{{ $traceUrl }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="mt-3 inline-flex rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800"
+                                >
+                                    Xem thông tin truy xuất →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        Mã truy xuất nguồn gốc đang được cập nhật.
+                    </div>
+                @endif
+
+                <p class="mt-4 text-sm text-gray-600">
+                    <strong>Tồn kho:</strong>
+                    {{ $product->stock ?? 0 }}
+                </p>
+            </div>
             </div>
 
             {{-- Thêm vào giỏ hàng --}}
@@ -109,9 +162,27 @@
                         Sản phẩm đã hết hàng
                     @endif
                 </button>
-            </form>
+        </form>
 
-            {{-- Yêu thích --}}
+        {{-- Chia sẻ sản phẩm --}}
+        <div class="mt-3">
+            <button
+                type="button"
+                id="share-product-button"
+                class="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-600 bg-white px-6 py-3 text-sm font-bold text-emerald-700 transition hover:bg-emerald-50"
+            >
+                <span aria-hidden="true">↗</span>
+                Chia sẻ sản phẩm
+            </button>
+
+            <p
+                id="share-product-message"
+                class="mt-2 hidden text-center text-xs font-medium text-emerald-700"
+                role="status"
+            ></p>
+        </div>
+
+        {{-- Yêu thích --}}
             @auth
                 <form
                     action="{{ route('wishlist.toggle', $product) }}"
@@ -489,3 +560,66 @@
     </div>
 </div>
 @endsection
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const shareButton = document.getElementById(
+            'share-product-button'
+        );
+        const shareMessage = document.getElementById(
+            'share-product-message'
+        );
+
+        if (!shareButton) {
+            return;
+        }
+
+        const showShareMessage = function (message, isError = false) {
+            shareMessage.textContent = message;
+            shareMessage.classList.remove(
+                'hidden',
+                'text-emerald-700',
+                'text-red-600'
+            );
+            shareMessage.classList.add(
+                isError ? 'text-red-600' : 'text-emerald-700'
+            );
+        };
+
+        shareButton.addEventListener('click', async function () {
+            const shareData = {
+                title: @json($product->name),
+                text: 'Xem sản phẩm {{ $product->name }} tại Nông Sản Việt',
+                url: window.location.href.split('#')[0],
+            };
+
+            try {
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                    return;
+                }
+
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(shareData.url);
+                    showShareMessage(
+                        'Đã sao chép liên kết sản phẩm.'
+                    );
+                    return;
+                }
+
+                window.prompt(
+                    'Sao chép liên kết sản phẩm:',
+                    shareData.url
+                );
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    window.prompt(
+                        'Sao chép liên kết sản phẩm:',
+                        shareData.url
+                    );
+                }
+            }
+        });
+    });
+</script>
+@endpush
